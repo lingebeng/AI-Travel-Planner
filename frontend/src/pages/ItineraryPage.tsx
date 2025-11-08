@@ -140,10 +140,13 @@ const ItineraryPage: React.FC = () => {
     editForm.resetFields();
   };
 
-  // Handle location click from timeline
+  // Handle location click from timeline - 直接打开外部地图
   const handleLocationClick = (item: any) => {
-    setMapDrawerVisible(true);
-    // Map will automatically focus on this location
+    const location = item.location || item.title;
+    // 打开高德地图
+    const amapUrl = `https://uri.amap.com/search?keyword=${encodeURIComponent(location)}&city=&coordinate=gaode`;
+    window.open(amapUrl, '_blank');
+    message.success(`正在打开地图: ${location}`);
   };
 
   // Get icon for item type
@@ -380,10 +383,7 @@ const ItineraryPage: React.FC = () => {
                               <Button
                                 type="link"
                                 icon={<EnvironmentOutlined />}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleLocationClick(item);
-                                }}
+                                onClick={() => handleLocationClick(item)}
                                 style={{ padding: 0 }}
                               >
                                 {item.location}

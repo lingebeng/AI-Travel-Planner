@@ -13,7 +13,8 @@ import {
   Row,
   Col,
   Tooltip,
-  Progress
+  Progress,
+  AutoComplete
 } from 'antd';
 import {
   AudioOutlined,
@@ -34,6 +35,37 @@ import './PlannerPage.scss';
 const { Title, Paragraph, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
+
+// 热门城市列表，按拼音首字母分组
+const POPULAR_CITIES = [
+  // A-D
+  { value: '北京', label: '北京 Beijing', pinyin: 'beijing', initial: 'B' },
+  { value: '成都', label: '成都 Chengdu', pinyin: 'chengdu', initial: 'C' },
+  { value: '重庆', label: '重庆 Chongqing', pinyin: 'chongqing', initial: 'C' },
+  { value: '长沙', label: '长沙 Changsha', pinyin: 'changsha', initial: 'C' },
+  { value: '大连', label: '大连 Dalian', pinyin: 'dalian', initial: 'D' },
+  // G-H
+  { value: '广州', label: '广州 Guangzhou', pinyin: 'guangzhou', initial: 'G' },
+  { value: '桂林', label: '桂林 Guilin', pinyin: 'guilin', initial: 'G' },
+  { value: '杭州', label: '杭州 Hangzhou', pinyin: 'hangzhou', initial: 'H' },
+  // K-N
+  { value: '昆明', label: '昆明 Kunming', pinyin: 'kunming', initial: 'K' },
+  { value: '拉萨', label: '拉萨 Lasa', pinyin: 'lasa', initial: 'L' },
+  { value: '丽江', label: '丽江 Lijiang', pinyin: 'lijiang', initial: 'L' },
+  { value: '南京', label: '南京 Nanjing', pinyin: 'nanjing', initial: 'N' },
+  // Q-S
+  { value: '青岛', label: '青岛 Qingdao', pinyin: 'qingdao', initial: 'Q' },
+  { value: '三亚', label: '三亚 Sanya', pinyin: 'sanya', initial: 'S' },
+  { value: '上海', label: '上海 Shanghai', pinyin: 'shanghai', initial: 'S' },
+  { value: '深圳', label: '深圳 Shenzhen', pinyin: 'shenzhen', initial: 'S' },
+  { value: '苏州', label: '苏州 Suzhou', pinyin: 'suzhou', initial: 'S' },
+  // T-Z
+  { value: '天津', label: '天津 Tianjin', pinyin: 'tianjin', initial: 'T' },
+  { value: '武汉', label: '武汉 Wuhan', pinyin: 'wuhan', initial: 'W' },
+  { value: '西安', label: '西安 Xian', pinyin: 'xian', initial: 'X' },
+  { value: '厦门', label: '厦门 Xiamen', pinyin: 'xiamen', initial: 'X' },
+  { value: '郑州', label: '郑州 Zhengzhou', pinyin: 'zhengzhou', initial: 'Z' },
+];
 
 const PlannerPage: React.FC = () => {
   const navigate = useNavigate();
@@ -276,10 +308,23 @@ const PlannerPage: React.FC = () => {
                   name="destination"
                   rules={[{ required: true, message: '请输入目的地' }]}
                 >
-                  <Input
-                    placeholder="例如：上海、杭州、西安"
+                  <AutoComplete
+                    options={POPULAR_CITIES.map(city => ({
+                      value: city.value,
+                      label: city.label
+                    }))}
+                    placeholder="请选择或输入目的地，如：上海、杭州"
                     size="large"
-                    prefix={<EnvironmentOutlined />}
+                    filterOption={(inputValue, option) => {
+                      if (!option) return false;
+                      const input = inputValue.toLowerCase();
+                      const city = POPULAR_CITIES.find(c => c.value === option.value);
+                      if (!city) return option.value.includes(inputValue);
+                      // 支持中文名、拼音、首字母搜索
+                      return city.value.includes(inputValue) ||
+                             city.pinyin.includes(input) ||
+                             city.initial.toLowerCase() === input;
+                    }}
                   />
                 </Form.Item>
               </Col>
