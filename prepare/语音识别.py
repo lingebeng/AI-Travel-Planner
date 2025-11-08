@@ -39,38 +39,32 @@ def recognize_speech_from_mic(timeout=10, phrase_time_limit=None):
         try:
             # 录音 - 移除phrase_time_limit限制或设置为更大的值
             audio = recognizer.listen(
-                source,
-                timeout=timeout,
-                phrase_time_limit=phrase_time_limit
+                source, timeout=timeout, phrase_time_limit=phrase_time_limit
             )
             print("录音完成，正在识别...")
         except sr.WaitTimeoutError:
             return {
-                'success': False,
-                'error': '等待超时，未检测到语音',
-                'transcription': None
+                "success": False,
+                "error": "等待超时，未检测到语音",
+                "transcription": None,
             }
 
     # 识别语音
-    response = {
-        'success': True,
-        'error': None,
-        'transcription': None
-    }
+    response = {"success": True, "error": None, "transcription": None}
 
     try:
         # 使用 Google Speech Recognition（免费）
-        response['transcription'] = recognizer.recognize_google(
+        response["transcription"] = recognizer.recognize_google(
             audio,
-            language='zh-CN'  # 中文识别
+            language="zh-CN",  # 中文识别
         )
     except sr.RequestError:
         # API 请求失败
-        response['success'] = False
-        response['error'] = 'API请求失败，请检查网络连接'
+        response["success"] = False
+        response["error"] = "API请求失败，请检查网络连接"
     except sr.UnknownValueError:
         # 无法识别语音
-        response['error'] = '无法识别语音内容'
+        response["error"] = "无法识别语音内容"
 
     return response
 
@@ -94,33 +88,26 @@ def recognize_speech_from_file(audio_file_path):
             print("正在识别...")
     except FileNotFoundError:
         return {
-            'success': False,
-            'error': f'文件不存在: {audio_file_path}',
-            'transcription': None
+            "success": False,
+            "error": f"文件不存在: {audio_file_path}",
+            "transcription": None,
         }
     except Exception as e:
         return {
-            'success': False,
-            'error': f'读取文件出错: {str(e)}',
-            'transcription': None
+            "success": False,
+            "error": f"读取文件出错: {str(e)}",
+            "transcription": None,
         }
 
-    response = {
-        'success': True,
-        'error': None,
-        'transcription': None
-    }
+    response = {"success": True, "error": None, "transcription": None}
 
     try:
-        response['transcription'] = recognizer.recognize_google(
-            audio,
-            language='zh-CN'
-        )
+        response["transcription"] = recognizer.recognize_google(audio, language="zh-CN")
     except sr.RequestError:
-        response['success'] = False
-        response['error'] = 'API请求失败，请检查网络连接'
+        response["success"] = False
+        response["error"] = "API请求失败，请检查网络连接"
     except sr.UnknownValueError:
-        response['error'] = '无法识别语音内容'
+        response["error"] = "无法识别语音内容"
 
     return response
 
@@ -139,38 +126,38 @@ def main():
     while True:
         choice = input("\n请输入选项 (0/1/2/3): ").strip()
 
-        if choice == '0':
+        if choice == "0":
             print("退出程序")
             break
-        elif choice == '1':
+        elif choice == "1":
             # 无时长限制，停顿1秒自动结束
             result = recognize_speech_from_mic()
             print("\n" + "-" * 50)
-            if result['success'] and result['transcription']:
+            if result["success"] and result["transcription"]:
                 print(f"识别结果: {result['transcription']}")
-            elif result['error']:
+            elif result["error"]:
                 print(f"错误: {result['error']}")
             print("-" * 50)
-        elif choice == '2':
+        elif choice == "2":
             # 自定义录音时长
             try:
                 duration = int(input("请输入最长录音时间（秒）: ").strip())
                 result = recognize_speech_from_mic(phrase_time_limit=duration)
                 print("\n" + "-" * 50)
-                if result['success'] and result['transcription']:
+                if result["success"] and result["transcription"]:
                     print(f"识别结果: {result['transcription']}")
-                elif result['error']:
+                elif result["error"]:
                     print(f"错误: {result['error']}")
                 print("-" * 50)
             except ValueError:
                 print("无效的时间输入")
-        elif choice == '3':
+        elif choice == "3":
             file_path = input("请输入音频文件路径 (WAV格式): ").strip()
             result = recognize_speech_from_file(file_path)
             print("\n" + "-" * 50)
-            if result['success'] and result['transcription']:
+            if result["success"] and result["transcription"]:
                 print(f"识别结果: {result['transcription']}")
-            elif result['error']:
+            elif result["error"]:
                 print(f"错误: {result['error']}")
             print("-" * 50)
         else:
