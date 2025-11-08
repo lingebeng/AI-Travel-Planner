@@ -5,11 +5,15 @@ description = "AI Travel Planner(Web)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "flask>=3.1.0",
+    "flask-cors>=5.0.0",
     "langchain>=1.0.3",
     "loguru>=0.7.3",
     "pre-commit>=4.3.0",
     "pyaudio>=0.2.14",
+    "python-dotenv>=1.0.0",
     "speechrecognition>=3.14.3",
+    "supabase>=2.10.0",
     "typer>=0.20.0",
     "typos>=1.39.0",
 ]
