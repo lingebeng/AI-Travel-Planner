@@ -8,6 +8,7 @@ from flask import Blueprint, jsonify, request
 from loguru import logger
 from werkzeug.exceptions import BadRequest
 
+from .auth import require_auth
 from .services import ai_service, map_service, voice_service
 from .supabase_client import supabase
 
@@ -18,6 +19,124 @@ def health_check():
     return jsonify(
         {"success": True, "status": "healthy", "timestamp": datetime.now().isoformat()}
     )
+
+
+# Authentication routes
+def register():
+    """Register a new user"""
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        email = data.get("email")
+        password = data.get("password")
+
+        if not email or not password:
+            raise BadRequest("Email and password are required")
+
+        # Register user with Supabase Auth
+        result = supabase.auth.sign_up(
+            {
+                "email": email,
+                "password": password,
+                "options": {
+                    "data": {
+                        "full_name": data.get("full_name", ""),
+                    }
+                },
+            }
+        )
+
+        if result.user:
+            return jsonify(
+                {
+                    "success": True,
+                    "data": {
+                        "user": {
+                            "id": result.user.id,
+                            "email": result.user.email,
+                        },
+                        "session": {
+                            "access_token": result.session.access_token
+                            if result.session
+                            else None,
+                            "refresh_token": result.session.refresh_token
+                            if result.session
+                            else None,
+                        },
+                    },
+                    "message": "Registration successful",
+                }
+            )
+        else:
+            raise Exception("Registration failed")
+
+    except BadRequest as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+def login():
+    """Login user"""
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        email = data.get("email")
+        password = data.get("password")
+
+        if not email or not password:
+            raise BadRequest("Email and password are required")
+
+        # Login with Supabase Auth
+        result = supabase.auth.sign_in_with_password(
+            {"email": email, "password": password}
+        )
+
+        if result.user:
+            return jsonify(
+                {
+                    "success": True,
+                    "data": {
+                        "user": {
+                            "id": result.user.id,
+                            "email": result.user.email,
+                            "user_metadata": result.user.user_metadata,
+                        },
+                        "session": {
+                            "access_token": result.session.access_token,
+                            "refresh_token": result.session.refresh_token,
+                        },
+                    },
+                    "message": "Login successful",
+                }
+            )
+        else:
+            raise Exception("Login failed")
+
+    except BadRequest as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({"success": False, "error": "Invalid credentials"}), 401
+
+
+def logout():
+    """Logout user"""
+    try:
+        # Note: Token-based logout is handled on the client side
+        # Server doesn't need to do anything except validate the request
+        return jsonify({"success": True, "message": "Logout successful"})
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def get_current_user(current_user):
+    """Get current authenticated user info"""
+    return jsonify({"success": True, "data": current_user})
 
 
 # Voice recognition routes
@@ -92,15 +211,13 @@ def generate_itinerary():
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
-def save_itinerary():
-    """Save itinerary to database"""
+def save_itinerary(current_user):
+    """Save itinerary to database (requires authentication)"""
     try:
         data = request.get_json()
 
-        # Get user ID from request (in real app, this would come from JWT)
-        user_id = data.get("user_id")
-        if not user_id:
-            raise BadRequest("User ID is required")
+        # Get user ID from authenticated user
+        user_id = current_user["id"]
 
         # Prepare itinerary data
         itinerary_data = {
@@ -132,13 +249,11 @@ def save_itinerary():
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
-def list_itineraries():
-    """List user's itineraries"""
+def list_itineraries(current_user):
+    """List user's itineraries (requires authentication)"""
     try:
-        # Get user ID from request (in real app, this would come from JWT)
-        user_id = request.args.get("user_id")
-        if not user_id:
-            raise BadRequest("User ID is required")
+        # Get user ID from authenticated user
+        user_id = current_user["id"]
 
         # Fetch from Supabase
         response = (
@@ -276,29 +391,39 @@ def get_weather():
 
 def register_routes(app):
     """Register all blueprints with the app"""
-    # Create nested structure by registering sub-blueprints first
+    # Create authentication blueprint
+    auth_api = Blueprint("auth", __name__)
+    auth_api.route("/register", methods=["POST"])(register)
+    auth_api.route("/login", methods=["POST"])(login)
+    auth_api.route("/logout", methods=["POST"])(logout)
+    auth_api.route("/me", methods=["GET"])(require_auth(get_current_user))
+
+    # Create voice API blueprint
     voice_api = Blueprint("voice", __name__)
     voice_api.route("/recognize", methods=["POST"])(recognize_voice)
     voice_api.route("/transcribe", methods=["POST"])(
         recognize_voice
     )  # 添加transcribe别名
 
+    # Create itinerary API blueprint
     itinerary_api = Blueprint("itinerary", __name__)
     itinerary_api.route("/generate", methods=["POST"])(generate_itinerary)
-    itinerary_api.route("/save", methods=["POST"])(save_itinerary)
-    itinerary_api.route("/list", methods=["GET"])(list_itineraries)
+    itinerary_api.route("/save", methods=["POST"])(require_auth(save_itinerary))
+    itinerary_api.route("/list", methods=["GET"])(require_auth(list_itineraries))
     itinerary_api.route("/<itinerary_id>", methods=["GET"])(get_itinerary)
     itinerary_api.route("/<itinerary_id>", methods=["DELETE"])(delete_itinerary)
 
+    # Create map API blueprint
     map_api = Blueprint("map", __name__)
     map_api.route("/geocode", methods=["GET"])(geocode)
     map_api.route("/search", methods=["GET"])(search_poi)
     map_api.route("/route", methods=["GET"])(get_route)
     map_api.route("/weather", methods=["GET"])(get_weather)
 
-    # Create main API blueprint and register routes
+    # Create main API blueprint and register all sub-blueprints
     main_api = Blueprint("api", __name__, url_prefix="/api")
     main_api.route("/health", methods=["GET"])(health_check)
+    main_api.register_blueprint(auth_api, url_prefix="/auth")
     main_api.register_blueprint(voice_api, url_prefix="/voice")
     main_api.register_blueprint(itinerary_api, url_prefix="/itinerary")
     main_api.register_blueprint(map_api, url_prefix="/map")
