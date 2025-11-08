@@ -1,4 +1,4 @@
-# Web 版AI 旅行规划师 (AI Travel Planner)
+# Web 版 AI 旅行规划师 (AI Travel Planner)
 
 ## 一、说明：
 
@@ -16,12 +16,11 @@
 
 云端行程同步: 旅行计划、偏好设置、费用记录等数据云端同步，方便多设备查看和修改。
 
-
 ## 三、技术栈（ Web）:自选，以下仅提供一些建议，不是严格要求。
 
-语音识别：基于科大讯飞或其他语音识别 API 提供语音识别功能
+语音识别：使用 Python 语音包.
 地图导航：基于高德或百度地图 API 提供地理位置服务和导航功能
-数据库/认证： Supabase，或Firebase Authentication 和 Firestore，或其它你认为合适的服务。
+数据库/认证： Supabase，或 Firebase Authentication 和 Firestore，或其它你认为合适的服务。
 行程规划和费用预算：通过大语言模型完成形成规划和费用预算的估计，大语言模型 API 自选
 UI/UX： 地图为主的交互界面，清晰的行程展示，美观的图片。
 
@@ -29,7 +28,7 @@ UI/UX： 地图为主的交互界面，清晰的行程展示，美观的图片�
 
 提交一个 pdf 文件，该文件包含 GitHub repo 地址和 readme 文档。
 
-项目代码提交在 GitHub 上，并提供可以直接下载运行的 docker image 文件和如何运行的 readme 文档（如果你用的不是阿里云的 API key（助教有阿里云百炼平台的 key），请将 key 提交在 readme 文档中，并保证 3 个月内可用，供助教批改作业使用）。保留尽可能多的、详细的GitHub 提交记录。
+项目代码提交在 GitHub 上，并提供可以直接下载运行的 docker image 文件和如何运行的 readme 文档（如果你用的不是阿里云的 API key（助教有阿里云百炼平台的 key），请将 key 提交在 readme 文档中，并保证 3 个月内可用，供助教批改作业使用）。保留尽可能多的、详细的 GitHub 提交记录。
 
 PS. 可以通过 Github Actions 将项目打包成 Docker 镜像并推送到阿里云镜像仓库中，相关的操作可以查阅官方文档或通过大模型完成。
 
