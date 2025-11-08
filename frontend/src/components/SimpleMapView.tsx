@@ -13,48 +13,51 @@ const SimpleMapView: React.FC<SimpleMapViewProps> = ({ itinerary, activeDay = 1,
   const [mapLoading, setMapLoading] = useState(true);
   const [mapError, setMapError] = useState(false);
   const [mapKey, setMapKey] = useState(0); // 用于强制重新加载地图
+  const [mapUrl, setMapUrl] = useState<string>(''); // 存储地图URL
 
   // 高德地图 API Key
   const AMAP_KEY = '38f0c3f8b200b1ac9a0c6f7fc977ac07';
 
-  // 当目的地改变时，重置地图状态
+  // 当目的地改变时，重新获取地图
   useEffect(() => {
-    setMapLoading(true);
-    setMapError(false);
-    setMapKey(prev => prev + 1); // 强制重新加载图片
+    const destination = itinerary?.metadata?.destination;
+    if (destination) {
+      setMapLoading(true);
+      setMapError(false);
+      fetchMapUrl(destination);
+    }
   }, [itinerary?.metadata?.destination]);
 
-  // 获取高德地图静态图片URL
-  const getStaticMapUrl = () => {
-    const destination = itinerary?.metadata?.destination || '上海';
+  // 通过高德API获取城市坐标并生成地图URL
+  const fetchMapUrl = async (destination: string) => {
+    try {
+      // 使用高德地图地理编码API获取城市坐标
+      const geocodeUrl = `https://restapi.amap.com/v3/geocode/geo?address=${encodeURIComponent(destination)}&key=${AMAP_KEY}`;
 
-    // 常见城市的经纬度坐标（高德地图坐标系）
-    const cityCoords: { [key: string]: { lng: number, lat: number } } = {
-      '上海': { lng: 121.4737, lat: 31.2304 },
-      '北京': { lng: 116.4074, lat: 39.9042 },
-      '广州': { lng: 113.2644, lat: 23.1291 },
-      '深圳': { lng: 114.0579, lat: 22.5431 },
-      '杭州': { lng: 120.1551, lat: 30.2741 },
-      '南京': { lng: 118.7969, lat: 32.0603 },
-      '苏州': { lng: 120.5954, lat: 31.2989 },
-      '成都': { lng: 104.0665, lat: 30.5728 },
-      '重庆': { lng: 106.5516, lat: 29.5630 },
-      '西安': { lng: 108.9399, lat: 34.3416 },
-      '武汉': { lng: 114.3054, lat: 30.5931 },
-      '天津': { lng: 117.2010, lat: 39.0842 },
-      '厦门': { lng: 118.0894, lat: 24.4798 },
-      '青岛': { lng: 120.3826, lat: 36.0671 },
-      '大连': { lng: 121.6147, lat: 38.9140 },
-      '宁波': { lng: 121.5440, lat: 29.8683 },
-    };
+      const response = await fetch(geocodeUrl);
+      const data = await response.json();
 
-    const coords = cityCoords[destination] || cityCoords['上海'];
+      if (data.status === '1' && data.geocodes && data.geocodes.length > 0) {
+        const location = data.geocodes[0].location; // 格式: "lng,lat"
+        const [lng, lat] = location.split(',');
 
-    // 使用高德地图静态图API
-    // 参数说明：location=经度,纬度 zoom=缩放级别 size=图片尺寸 markers=标记点
-    const url = `https://restapi.amap.com/v3/staticmap?location=${coords.lng},${coords.lat}&zoom=12&size=800*400&markers=mid,,A:${coords.lng},${coords.lat}&key=${AMAP_KEY}`;
+        // 生成静态地图URL
+        const staticMapUrl = `https://restapi.amap.com/v3/staticmap?location=${lng},${lat}&zoom=12&size=800*400&markers=mid,,A:${lng},${lat}&key=${AMAP_KEY}`;
 
-    return url;
+        setMapUrl(staticMapUrl);
+        setMapKey(prev => prev + 1); // 强制重新加载
+      } else {
+        console.warn('未找到城市坐标，使用默认位置');
+        // 使用默认位置（上海）
+        const defaultUrl = `https://restapi.amap.com/v3/staticmap?location=121.4737,31.2304&zoom=12&size=800*400&markers=mid,,A:121.4737,31.2304&key=${AMAP_KEY}`;
+        setMapUrl(defaultUrl);
+        setMapKey(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('获取地图失败:', error);
+      setMapError(true);
+      setMapLoading(false);
+    }
   };
 
   // Navigate to external map service
@@ -124,11 +127,11 @@ const SimpleMapView: React.FC<SimpleMapViewProps> = ({ itinerary, activeDay = 1,
               在地图中查看全部地点
             </Button>
           </div>
-        ) : (
+        ) : mapUrl ? (
           <>
             <img
               key={mapKey}
-              src={getStaticMapUrl()}
+              src={mapUrl}
               alt={`${itinerary?.metadata?.destination}地图`}
               onLoad={() => setMapLoading(false)}
               onError={() => {
@@ -140,10 +143,15 @@ const SimpleMapView: React.FC<SimpleMapViewProps> = ({ itinerary, activeDay = 1,
             {mapLoading && (
               <div className="map-loading">
                 <LoadingOutlined spin style={{ fontSize: 32 }} />
-                <p>地图加载中...</p>
+                <p>正在加载地图...</p>
               </div>
             )}
           </>
+        ) : (
+          <div className="map-loading">
+            <LoadingOutlined spin style={{ fontSize: 32 }} />
+            <p>正在获取城市坐标...</p>
+          </div>
         )}
       </div>
 
