@@ -1,0 +1,157 @@
+.simple-map-view {
+  width: 100%;
+
+  .map-image-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f5f7fa;
+    margin-bottom: 16px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .map-loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+
+      p {
+        margin-top: 12px;
+        font-size: 14px;
+      }
+    }
+
+    .map-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #333;
+      background: linear-gradient(135deg, #e6fffa 0%, #dcfce7 100%);
+
+      .placeholder-icon {
+        font-size: 48px;
+        color: #22c55e;
+        margin-bottom: 16px;
+      }
+
+      h3 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+      }
+
+      p {
+        margin-bottom: 16px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      button {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        border: none;
+        border-radius: 20px;
+        padding: 8px 24px;
+        font-size: 14px;
+        transition: transform 0.2s;
+
+        &:hover {
+          transform: scale(1.05);
+        }
+      }
+    }
+  }
+
+  .locations-list {
+    margin-bottom: 16px;
+
+    h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .locations-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .location-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: linear-gradient(135deg, #f0fdf5, #dcfce7);
+        transform: translateX(4px);
+      }
+
+      .location-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: bold;
+        margin-right: 12px;
+      }
+
+      .location-info {
+        flex: 1;
+
+        .location-title {
+          font-size: 14px;
+          font-weight: 500;
+          color: #1a1a1a;
+          margin-bottom: 4px;
+        }
+
+        .location-address {
+          font-size: 12px;
+          color: #666;
+          margin-bottom: 2px;
+        }
+
+        .location-time {
+          font-size: 12px;
+          color: #999;
+        }
+      }
+    }
+  }
+
+  .map-actions {
+    button {
+      border-radius: 8px;
+      height: 40px;
+      font-size: 14px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: none;
+
+      &:hover {
+        opacity: 0.9;
+      }
+    }
+  }
+}

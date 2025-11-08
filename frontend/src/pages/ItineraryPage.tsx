@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
   Card,
   Timeline,
@@ -12,10 +12,12 @@ import {
   Col,
   Statistic,
   List,
-  Divider,
-  Tooltip,
+  Form,
+  Input,
+  InputNumber,
   message,
-  Spin
+  Spin,
+  Drawer
 } from 'antd';
 import {
   EnvironmentOutlined,
@@ -29,101 +31,31 @@ import {
   CameraOutlined,
   ShoppingOutlined,
   DownloadOutlined,
-  ShareAltOutlined,
-  EditOutlined
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import { plannerService } from '../services/plannerService';
+import { generatePDF, generatePDFFromHTML } from '../services/pdfService';
+import SimpleMapView from '../components/SimpleMapView';
 import './ItineraryPage.scss';
 
 const { Title, Paragraph, Text } = Typography;
 const { TabPane } = Tabs;
-
-// Map loader script
-declare global {
-  interface Window {
-    AMap: any;
-    _AMapSecurityConfig: any;
-  }
-}
+const { TextArea } = Input;
 
 const ItineraryPage: React.FC = () => {
   const { id } = useParams();
   const location = useLocation();
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
+  const navigate = useNavigate();
 
   const [itinerary, setItinerary] = useState<any>(location.state?.itinerary || null);
   const [loading, setLoading] = useState(!location.state?.itinerary);
   const [activeDay, setActiveDay] = useState('1');
-
-  // Load Amap script
-  useEffect(() => {
-    // Configure security
-    window._AMapSecurityConfig = {
-      securityJsCode: 'YOUR_SECURITY_CODE', // This would come from backend
-    };
-
-    // Load map script
-    const script = document.createElement('script');
-    script.src = `https://webapi.amap.com/maps?v=2.0&key=YOUR_WEB_KEY&plugin=AMap.Marker,AMap.Polyline`;
-    script.async = true;
-    script.onload = initializeMap;
-    document.head.appendChild(script);
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.destroy();
-      }
-    };
-  }, []);
-
-  // Initialize map
-  const initializeMap = () => {
-    if (!mapContainerRef.current || !window.AMap) return;
-
-    const map = new window.AMap.Map(mapContainerRef.current, {
-      zoom: 12,
-      center: [121.473701, 31.230416], // Default to Shanghai
-      mapStyle: 'amap://styles/fresh', // Fresh style
-    });
-
-    mapInstanceRef.current = map;
-
-    // Add markers for itinerary items if available
-    if (itinerary?.daily_itinerary) {
-      addItineraryMarkers();
-    }
-  };
-
-  // Add markers for itinerary locations
-  const addItineraryMarkers = () => {
-    if (!mapInstanceRef.current || !itinerary?.daily_itinerary) return;
-
-    const map = mapInstanceRef.current;
-    const markers: any[] = [];
-
-    itinerary.daily_itinerary.forEach((day: any) => {
-      day.items.forEach((item: any, index: number) => {
-        // For demo, using random coordinates near Shanghai
-        const lng = 121.473701 + (Math.random() - 0.5) * 0.1;
-        const lat = 31.230416 + (Math.random() - 0.5) * 0.1;
-
-        const marker = new window.AMap.Marker({
-          position: [lng, lat],
-          title: item.title,
-          content: `<div class="map-marker day-${day.day}">${index + 1}</div>`,
-        });
-
-        marker.on('click', () => {
-          message.info(`${item.title}: ${item.description}`);
-        });
-
-        markers.push(marker);
-      });
-    });
-
-    map.add(markers);
-  };
+  const [editMode, setEditMode] = useState(false);
+  const [editForm] = Form.useForm();
+  const [mapDrawerVisible, setMapDrawerVisible] = useState(false);
+  const itineraryRef = useRef<HTMLDivElement>(null);
 
   // Load itinerary if not in state
   useEffect(() => {
@@ -144,6 +76,74 @@ const ItineraryPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle PDF download
+  const handleDownloadPDF = async () => {
+    if (!itinerary) return;
+
+    try {
+      message.loading('正在生成PDF...', 0);
+
+      // 使用HTML转PDF的方法，更好地支持中文显示
+      const filename = `${itinerary.metadata?.destination}_行程计划_${new Date().toLocaleDateString()}.pdf`;
+      await generatePDFFromHTML('itinerary-content', filename);
+
+      message.destroy();
+      message.success('PDF下载成功！');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      message.destroy();
+      message.error('PDF生成失败，请重试');
+    }
+  };
+
+  // Handle edit
+  const handleEdit = () => {
+    setEditMode(true);
+    // Populate form with current values
+    editForm.setFieldsValue({
+      summary: itinerary.summary,
+      budget: itinerary.metadata?.budget,
+      // Add more fields as needed
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const values = await editForm.validateFields();
+
+      // Update local state
+      const updatedItinerary = {
+        ...itinerary,
+        summary: values.summary,
+        metadata: {
+          ...itinerary.metadata,
+          budget: values.budget
+        }
+      };
+
+      setItinerary(updatedItinerary);
+      setEditMode(false);
+      message.success('修改已保存');
+
+      // TODO: Save to backend
+      // await plannerService.updateItinerary(id, updatedItinerary);
+    } catch (error) {
+      console.error('Save failed:', error);
+      message.error('保存失败');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    editForm.resetFields();
+  };
+
+  // Handle location click from timeline
+  const handleLocationClick = (item: any) => {
+    setMapDrawerVisible(true);
+    // Map will automatically focus on this location
   };
 
   // Get icon for item type
@@ -194,39 +194,66 @@ const ItineraryPage: React.FC = () => {
     return (
       <div className="error-container">
         <Title level={3}>No itinerary found</Title>
+        <Button type="primary" onClick={() => navigate('/planner')}>
+          创建新行程
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="itinerary-page">
-      <div className="itinerary-container">
+      <div className="itinerary-container" ref={itineraryRef} id="itinerary-content">
         {/* Header */}
         <Card className="itinerary-header">
           <Row gutter={[24, 24]} align="middle">
             <Col xs={24} lg={16}>
-              <Title level={2} className="destination-title">
-                {itinerary.metadata?.destination || 'Your Trip'}
-              </Title>
-              <Space size="large" wrap>
-                <Text>
-                  <CalendarOutlined /> {itinerary.metadata?.start_date} 至 {itinerary.metadata?.end_date}
-                </Text>
-                <Text>
-                  <TeamOutlined /> {itinerary.metadata?.people_count} 人
-                </Text>
-                <Text>
-                  <DollarOutlined /> ¥{itinerary.metadata?.budget}
-                </Text>
-              </Space>
+              {editMode ? (
+                <Form form={editForm} layout="vertical">
+                  <Form.Item name="destination" label="目的地">
+                    <Input defaultValue={itinerary.metadata?.destination} />
+                  </Form.Item>
+                </Form>
+              ) : (
+                <>
+                  <Title level={2} className="destination-title">
+                    {itinerary.metadata?.destination || 'Your Trip'}
+                  </Title>
+                  <Space size="large" wrap>
+                    <Text>
+                      <CalendarOutlined /> {itinerary.metadata?.start_date} 至 {itinerary.metadata?.end_date}
+                    </Text>
+                    <Text>
+                      <TeamOutlined /> {itinerary.metadata?.people_count} 人
+                    </Text>
+                    <Text>
+                      <DollarOutlined /> ¥{itinerary.metadata?.budget}
+                    </Text>
+                  </Space>
+                </>
+              )}
             </Col>
             <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
               <Space>
-                <Button icon={<EditOutlined />}>编辑</Button>
-                <Button icon={<ShareAltOutlined />}>分享</Button>
-                <Button type="primary" icon={<DownloadOutlined />}>
-                  下载PDF
-                </Button>
+                {editMode ? (
+                  <>
+                    <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit}>
+                      保存
+                    </Button>
+                    <Button icon={<CloseOutlined />} onClick={handleCancelEdit}>
+                      取消
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button icon={<EditOutlined />} onClick={handleEdit}>
+                      编辑
+                    </Button>
+                    <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPDF}>
+                      下载PDF
+                    </Button>
+                  </>
+                )}
               </Space>
             </Col>
           </Row>
@@ -236,7 +263,13 @@ const ItineraryPage: React.FC = () => {
         {itinerary.summary && (
           <Card className="summary-card">
             <Title level={4}>行程亮点</Title>
-            <Paragraph className="summary-text">{itinerary.summary}</Paragraph>
+            {editMode ? (
+              <Form.Item name="summary">
+                <TextArea rows={3} />
+              </Form.Item>
+            ) : (
+              <Paragraph className="summary-text">{itinerary.summary}</Paragraph>
+            )}
           </Card>
         )}
 
@@ -320,7 +353,11 @@ const ItineraryPage: React.FC = () => {
                           dot={getItemIcon(item.type)}
                           color={getItemColor(item.type)}
                         >
-                          <Card className="timeline-card">
+                          <Card
+                            className="timeline-card"
+                            onClick={() => handleLocationClick(item)}
+                            hoverable
+                          >
                             <div className="timeline-header">
                               <Space>
                                 <Tag color={getItemColor(item.type)}>
@@ -340,9 +377,17 @@ const ItineraryPage: React.FC = () => {
                             <Paragraph>{item.description}</Paragraph>
 
                             <Space direction="vertical" size="small">
-                              <Text>
-                                <EnvironmentOutlined /> {item.location}
-                              </Text>
+                              <Button
+                                type="link"
+                                icon={<EnvironmentOutlined />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLocationClick(item);
+                                }}
+                                style={{ padding: 0 }}
+                              >
+                                {item.location}
+                              </Button>
                               {item.estimated_cost > 0 && (
                                 <Text>
                                   <DollarOutlined /> 预计费用：¥{item.estimated_cost}
@@ -370,8 +415,23 @@ const ItineraryPage: React.FC = () => {
           <Col xs={24} lg={10}>
             {/* Map */}
             <Card className="map-card">
-              <Title level={4}>地图视图</Title>
-              <div ref={mapContainerRef} className="map-container" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <Title level={4}>地图视图</Title>
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={() => setMapDrawerVisible(true)}
+                >
+                  全屏地图
+                </Button>
+              </div>
+              <div style={{ height: 400, borderRadius: 12, overflow: 'hidden' }}>
+                <SimpleMapView
+                  itinerary={itinerary}
+                  activeDay={parseInt(activeDay)}
+                  onLocationClick={handleLocationClick}
+                />
+              </div>
             </Card>
 
             {/* Accommodation Suggestions */}
@@ -416,6 +476,26 @@ const ItineraryPage: React.FC = () => {
           </Col>
         </Row>
       </div>
+
+      {/* Map Drawer */}
+      <Drawer
+        title="地图导航"
+        placement="right"
+        width="80%"
+        visible={mapDrawerVisible}
+        onClose={() => setMapDrawerVisible(false)}
+        bodyStyle={{ padding: 0 }}
+      >
+        <div style={{ height: '100%' }}>
+          <SimpleMapView
+            itinerary={itinerary}
+            activeDay={parseInt(activeDay)}
+            onLocationClick={(item) => {
+              message.info(`导航到：${item.title}`);
+            }}
+          />
+        </div>
+      </Drawer>
     </div>
   );
 };
