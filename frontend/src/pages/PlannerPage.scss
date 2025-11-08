@@ -1,0 +1,212 @@
+// Remove theme.ts import - using CSS variables instead
+
+.planner-page {
+  min-height: calc(100vh - 88px);
+  padding: 40px 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #fafbfc 100%);
+
+  .planner-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .planner-header {
+    text-align: center;
+    margin-bottom: 40px;
+
+    .page-title {
+      font-size: 36px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #1a1a1a, #52525b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .page-description {
+      font-size: 16px;
+      color: #71717a;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  }
+
+  .planner-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .ant-form-item-label {
+      label {
+        font-weight: 500;
+        font-size: 14px;
+        color: #3f3f46;
+      }
+    }
+
+    .ant-input,
+    .ant-input-number,
+    .ant-picker {
+      border-radius: 8px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: #22c55e;
+      }
+
+      &:focus,
+      &.ant-input-focused {
+        border-color: #22c55e;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+      }
+    }
+
+    .voice-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 0;
+      margin: 24px 0;
+      border-top: 1px solid #e4e4e7;
+      border-bottom: 1px solid #e4e4e7;
+
+      .voice-button {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        transition: all 0.3s ease;
+        border: 2px solid #22c55e;
+        background: white;
+        color: #22c55e;
+
+        &:hover:not(.recording) {
+          background: #f0fdf5;
+          transform: scale(1.1);
+        }
+
+        &.recording {
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          border-color: #ef4444;
+          color: white;
+          animation: pulse 1.5s ease-in-out infinite;
+
+          &:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+          }
+        }
+      }
+    }
+
+    .submit-button {
+      height: 48px;
+      font-size: 16px;
+      font-weight: 500;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: none;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+      }
+
+      &:disabled {
+        background: #d4d4d8;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .tips-card {
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f0fdf5, #dcfce7);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+
+    h4 {
+      color: #16a34a;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .tips-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        position: relative;
+        padding-left: 24px;
+        margin-bottom: 12px;
+        color: #52525b;
+        line-height: 1.6;
+
+        &::before {
+          content: '✨';
+          position: absolute;
+          left: 0;
+          top: 0;
+        }
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .planner-page {
+    padding: 24px 16px;
+
+    .planner-header {
+      .page-title {
+        font-size: 28px;
+      }
+
+      .page-description {
+        font-size: 14px;
+      }
+    }
+
+    .voice-section {
+      .voice-button {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+      }
+    }
+  }
+}

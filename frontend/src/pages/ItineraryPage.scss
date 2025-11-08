@@ -1,0 +1,238 @@
+// Remove theme.ts import - using CSS variables instead
+
+.itinerary-page {
+  min-height: calc(100vh - 88px);
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #fafbfc 100%);
+
+  .itinerary-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .loading-container,
+  .error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+  }
+
+  // Header Card
+  .itinerary-header {
+    margin-bottom: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    .destination-title {
+      margin-bottom: 16px;
+      font-size: 32px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+
+  // Summary Card
+  .summary-card {
+    margin-bottom: 24px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f0fdf5, #dcfce7);
+    border: 1px solid rgba(34, 197, 94, 0.1);
+
+    h4 {
+      color: #16a34a;
+      margin-bottom: 12px;
+    }
+
+    .summary-text {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #3f3f46;
+    }
+  }
+
+  // Budget Card
+  .budget-card {
+    margin-bottom: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    h4 {
+      margin-bottom: 24px;
+    }
+
+    .ant-statistic {
+      text-align: center;
+
+      .ant-statistic-title {
+        font-size: 14px;
+        color: #71717a;
+      }
+
+      .ant-statistic-content {
+        font-size: 20px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  // Itinerary Card
+  .itinerary-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    .ant-tabs-tab {
+      font-weight: 500;
+      padding: 12px 16px;
+
+      &.ant-tabs-tab-active {
+        color: #22c55e;
+      }
+    }
+
+    .day-header {
+      margin-bottom: 24px;
+
+      h4 {
+        margin-bottom: 8px;
+        color: #1a1a1a;
+      }
+    }
+
+    .timeline-card {
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      }
+
+      .timeline-header {
+        margin-bottom: 12px;
+      }
+
+      h5 {
+        margin-bottom: 8px;
+        font-size: 16px;
+        color: #1a1a1a;
+      }
+
+      .tips-section {
+        margin-top: 12px;
+        padding: 8px 12px;
+        background: #f5f7fa;
+        border-radius: 8px;
+      }
+    }
+
+    .ant-timeline-item-dot {
+      background: white;
+      border: 2px solid currentColor;
+      font-size: 16px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  // Map Card
+  .map-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
+
+    h4 {
+      margin-bottom: 16px;
+    }
+
+    .map-container {
+      height: 400px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f5f7fa;
+      position: relative;
+
+      // Custom marker styles
+      :global(.map-marker) {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+        &.day-1 { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        &.day-2 { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+        &.day-3 { background: linear-gradient(135deg, #f97316, #ea580c); }
+        &.day-4 { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+      }
+    }
+  }
+
+  // Accommodation Card
+  .accommodation-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
+
+    h4 {
+      margin-bottom: 16px;
+    }
+
+    .ant-list-item {
+      padding: 16px 0;
+      border-bottom: 1px solid #e4e4e7;
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+
+  // Tips Card
+  .tips-card {
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 1px solid rgba(14, 165, 233, 0.1);
+
+    h4 {
+      color: #0284c7;
+      margin-bottom: 16px;
+    }
+
+    .ant-list-item {
+      padding: 8px 0;
+      border-bottom: none;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .itinerary-page {
+    padding: 16px;
+
+    .destination-title {
+      font-size: 24px !important;
+    }
+
+    .map-container {
+      height: 300px !important;
+    }
+
+    .ant-statistic-content {
+      font-size: 16px !important;
+    }
+  }
+}

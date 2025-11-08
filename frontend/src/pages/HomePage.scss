@@ -1,0 +1,326 @@
+// Remove theme.ts import - using CSS variables instead
+
+.home-page {
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  // Hero Section
+  .hero-section {
+    min-height: calc(100vh - 88px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    position: relative;
+    overflow: hidden;
+
+    .hero-content {
+      text-align: center;
+      z-index: 2;
+      position: relative;
+
+      .hero-icon-wrapper {
+        display: inline-block;
+        padding: 20px;
+        background: linear-gradient(135deg, #f0fdf5, #dcfce7);
+        border-radius: 50%;
+        margin-bottom: 24px;
+        animation: float 3s ease-in-out infinite;
+
+        .hero-icon {
+          font-size: 48px;
+          background: linear-gradient(135deg, #22c55e, #0ea5e9);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+      }
+
+      .hero-title {
+        font-size: 48px;
+        font-weight: 700;
+        margin-bottom: 24px;
+        line-height: 1.2;
+
+        .gradient-text {
+          background: linear-gradient(135deg, #22c55e, #0ea5e9);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+      }
+
+      .hero-description {
+        font-size: 18px;
+        color: #52525b;
+        max-width: 600px;
+        margin: 0 auto 40px;
+        line-height: 1.8;
+      }
+
+      .cta-button {
+        height: 48px;
+        padding: 0 32px;
+        font-size: 16px;
+        border-radius: 24px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+
+        &.primary {
+          background: linear-gradient(135deg, #22c55e, #16a34a);
+          border: none;
+          box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+          }
+        }
+
+        &.secondary {
+          border: 2px solid #22c55e;
+          color: #22c55e;
+
+          &:hover {
+            background: #f0fdf5;
+            transform: translateY(-2px);
+          }
+        }
+      }
+    }
+
+    .hero-decoration {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      pointer-events: none;
+
+      .circle {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.1;
+
+        &.circle-1 {
+          width: 400px;
+          height: 400px;
+          background: linear-gradient(135deg, #22c55e, #0ea5e9);
+          top: -200px;
+          right: -100px;
+          animation: float 8s ease-in-out infinite;
+        }
+
+        &.circle-2 {
+          width: 300px;
+          height: 300px;
+          background: linear-gradient(135deg, #0ea5e9, #f97316);
+          bottom: -150px;
+          left: -50px;
+          animation: float 6s ease-in-out infinite reverse;
+        }
+
+        &.circle-3 {
+          width: 200px;
+          height: 200px;
+          background: linear-gradient(135deg, #f97316, #8b5cf6);
+          top: 50%;
+          left: 10%;
+          animation: float 10s ease-in-out infinite;
+        }
+      }
+    }
+  }
+
+  // Features Section
+  .features-section {
+    padding: 80px 0;
+    background: linear-gradient(135deg, #fafbfc, #f5f7fa);
+
+    .section-title {
+      text-align: center;
+      font-size: 36px;
+      margin-bottom: 60px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #1a1a1a, #52525b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .feature-card {
+      height: 100%;
+      text-align: center;
+      border: none;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+
+      .feature-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 24px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+      }
+
+      .feature-title {
+        margin-bottom: 12px;
+        font-size: 20px;
+      }
+
+      .feature-description {
+        color: #71717a;
+        line-height: 1.6;
+      }
+
+      &:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+
+  // How it works Section
+  .how-it-works {
+    padding: 80px 0;
+    background: white;
+
+    .section-title {
+      text-align: center;
+      font-size: 36px;
+      margin-bottom: 60px;
+      font-weight: 600;
+    }
+
+    .step-card {
+      text-align: center;
+      position: relative;
+
+      .step-number {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 24px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+      }
+
+      h3 {
+        margin-bottom: 12px;
+        font-size: 20px;
+      }
+
+      p {
+        color: #71717a;
+        max-width: 280px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  // CTA Section
+  .cta-section {
+    padding: 80px 24px;
+
+    .cta-card {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 60px 40px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(240, 253, 245, 0.9), rgba(220, 252, 231, 0.9));
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      text-align: center;
+
+      .cta-icon {
+        font-size: 48px;
+        color: #ef4444;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .cta-title {
+        font-size: 32px;
+        margin-bottom: 16px;
+      }
+
+      .cta-description {
+        font-size: 18px;
+        color: #52525b;
+        margin-bottom: 32px;
+      }
+
+      .cta-button.large {
+        height: 56px;
+        padding: 0 48px;
+        font-size: 18px;
+        box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .home-page {
+    .hero-section {
+      .hero-content {
+        .hero-title {
+          font-size: 32px;
+        }
+
+        .hero-description {
+          font-size: 16px;
+        }
+      }
+    }
+
+    .features-section,
+    .how-it-works,
+    .cta-section {
+      padding: 40px 0;
+
+      .section-title {
+        font-size: 28px;
+        margin-bottom: 40px;
+      }
+    }
+
+    .cta-section {
+      .cta-card {
+        padding: 40px 24px;
+      }
+    }
+  }
+}

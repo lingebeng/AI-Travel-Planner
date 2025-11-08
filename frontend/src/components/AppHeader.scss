@@ -1,0 +1,137 @@
+// Remove theme.ts import - using CSS variables instead
+
+.app-header {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 0;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  .header-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+  }
+
+  .logo-section {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateX(4px);
+
+      .logo-icon {
+        transform: rotate(10deg);
+      }
+    }
+
+    .logo-icon {
+      font-size: 28px;
+      background: linear-gradient(135deg, #22c55e, #0ea5e9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-right: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .logo-text {
+      margin: 0;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 600;
+    }
+  }
+
+  .nav-menu {
+    display: flex;
+    align-items: center;
+
+    button {
+      font-size: 15px;
+      height: 36px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+
+      &.active {
+        background: linear-gradient(135deg, #f0fdf5, #dcfce7);
+        color: #16a34a;
+      }
+
+      &:hover:not(.active) {
+        transform: translateY(-2px);
+      }
+    }
+
+    .planner-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: none;
+      color: white;
+      font-weight: 500;
+      padding: 0 24px;
+
+      &:hover {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #15803d, #14532d);
+        color: white;
+      }
+    }
+
+    .user-btn {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+      border: 1px solid #bae6fd;
+      color: #0284c7;
+
+      &:hover {
+        background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+        border-color: #7dd3fc;
+        transform: rotate(5deg) scale(1.1);
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    .header-container {
+      padding: 0 16px;
+    }
+
+    .logo-section {
+      .logo-text {
+        font-size: 18px;
+      }
+    }
+
+    .nav-menu {
+      button {
+        font-size: 14px;
+        height: 32px;
+      }
+
+      .planner-btn {
+        padding: 0 16px;
+      }
+    }
+  }
+}
