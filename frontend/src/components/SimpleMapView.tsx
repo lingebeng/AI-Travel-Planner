@@ -12,9 +12,17 @@ interface SimpleMapViewProps {
 const SimpleMapView: React.FC<SimpleMapViewProps> = ({ itinerary, activeDay = 1, onLocationClick }) => {
   const [mapLoading, setMapLoading] = useState(true);
   const [mapError, setMapError] = useState(false);
+  const [mapKey, setMapKey] = useState(0); // 用于强制重新加载地图
 
   // 高德地图 API Key
   const AMAP_KEY = '38f0c3f8b200b1ac9a0c6f7fc977ac07';
+
+  // 当目的地改变时，重置地图状态
+  useEffect(() => {
+    setMapLoading(true);
+    setMapError(false);
+    setMapKey(prev => prev + 1); // 强制重新加载图片
+  }, [itinerary?.metadata?.destination]);
 
   // 获取高德地图静态图片URL
   const getStaticMapUrl = () => {
@@ -28,10 +36,16 @@ const SimpleMapView: React.FC<SimpleMapViewProps> = ({ itinerary, activeDay = 1,
       '深圳': { lng: 114.0579, lat: 22.5431 },
       '杭州': { lng: 120.1551, lat: 30.2741 },
       '南京': { lng: 118.7969, lat: 32.0603 },
+      '苏州': { lng: 120.5954, lat: 31.2989 },
       '成都': { lng: 104.0665, lat: 30.5728 },
       '重庆': { lng: 106.5516, lat: 29.5630 },
       '西安': { lng: 108.9399, lat: 34.3416 },
       '武汉': { lng: 114.3054, lat: 30.5931 },
+      '天津': { lng: 117.2010, lat: 39.0842 },
+      '厦门': { lng: 118.0894, lat: 24.4798 },
+      '青岛': { lng: 120.3826, lat: 36.0671 },
+      '大连': { lng: 121.6147, lat: 38.9140 },
+      '宁波': { lng: 121.5440, lat: 29.8683 },
     };
 
     const coords = cityCoords[destination] || cityCoords['上海'];
@@ -113,6 +127,7 @@ const SimpleMapView: React.FC<SimpleMapViewProps> = ({ itinerary, activeDay = 1,
         ) : (
           <>
             <img
+              key={mapKey}
               src={getStaticMapUrl()}
               alt={`${itinerary?.metadata?.destination}地图`}
               onLoad={() => setMapLoading(false)}

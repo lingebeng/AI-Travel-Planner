@@ -279,6 +279,9 @@ def register_routes(app):
     # Create nested structure by registering sub-blueprints first
     voice_api = Blueprint("voice", __name__)
     voice_api.route("/recognize", methods=["POST"])(recognize_voice)
+    voice_api.route("/transcribe", methods=["POST"])(
+        recognize_voice
+    )  # 添加transcribe别名
 
     itinerary_api = Blueprint("itinerary", __name__)
     itinerary_api.route("/generate", methods=["POST"])(generate_itinerary)

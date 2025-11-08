@@ -1,0 +1,14 @@
+{
+    "files.exclude": {
+        ".claude": true,
+        ".env.example": true,
+        ".python-version": true,
+        ".ruff_cache": true,
+        ".venv": true,
+        ".vscode": true,
+        "**/__init__.py": true,
+        "**/__pycache__": true,
+        "LICENSE": true,
+        "uv.lock": true
+    }
+}

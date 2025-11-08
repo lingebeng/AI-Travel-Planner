@@ -47,9 +47,21 @@ const PlannerPage: React.FC = () => {
   // Start voice recording
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        }
+      });
+
+      // 检查是否支持webm格式
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm'
+        mimeType: mimeType
       });
 
       audioChunksRef.current = [];
@@ -61,7 +73,15 @@ const PlannerPage: React.FC = () => {
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+
+        // 检查录音大小
+        if (audioBlob.size < 1000) {
+          message.warning('录音时间太短，请重新录制');
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
         await handleVoiceInput(audioBlob);
 
         // Stop all tracks
@@ -71,7 +91,7 @@ const PlannerPage: React.FC = () => {
       mediaRecorder.start();
       mediaRecorderRef.current = mediaRecorder;
       setIsRecording(true);
-      message.info('开始录音，请说出您的旅行需求...');
+      message.info('🎤 录音中... 请清晰说出您的旅行需求（建议5-10秒）', 5);
     } catch (error) {
       console.error('Failed to start recording:', error);
       message.error('无法访问麦克风，请检查权限设置');
@@ -104,11 +124,21 @@ const PlannerPage: React.FC = () => {
       if (transcription) {
         // Parse transcription and fill form
         parseTranscription(transcription);
-        message.success('语音识别成功！');
+        message.success(`✅ 识别成功：${transcription}`);
+      } else {
+        message.warning('未能识别到语音内容，请重新尝试：\n1. 确保环境安静\n2. 说话清晰响亮\n3. 录音时长5-10秒', 8);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Voice recognition failed:', error);
-      message.error('语音识别失败，请重试');
+      const errorMsg = error.response?.data?.error || error.message;
+
+      if (errorMsg?.includes('网络') || errorMsg?.includes('API')) {
+        message.error('网络连接失败，请检查网络后重试');
+      } else if (errorMsg?.includes('无法识别')) {
+        message.warning('无法识别语音，建议：\n• 在安静环境录音\n• 说话清晰且声音足够大\n• 录音时长5-10秒\n• 距离麦克风15-30cm', 10);
+      } else {
+        message.error('语音识别失败，请重试');
+      }
     } finally {
       setIsLoading(false);
       setProgress(0);
