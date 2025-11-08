@@ -1,0 +1,24 @@
+# AI Travel Planner Backend Dependencies
+
+# Flask and extensions
+flask>=3.1.0
+flask-cors>=5.0.0
+
+# AI/LLM
+langchain>=1.0.3
+langchain-openai>=1.0.2
+
+# Database
+supabase>=2.10.0
+
+# Voice recognition
+speechrecognition>=3.14.3
+pyaudio>=0.2.14
+
+# Utilities
+python-dotenv>=1.0.0
+loguru>=0.7.3
+requests>=2.31.0
+
+# HTTP client
+httpx[socks]>=0.28.1
