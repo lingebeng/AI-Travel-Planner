@@ -1,0 +1,119 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+
+  .auth-container {
+    width: 100%;
+    max-width: 450px;
+
+    .auth-card {
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+
+      .auth-header {
+        text-align: center;
+        margin-bottom: 24px;
+
+        h2 {
+          margin-bottom: 8px;
+          font-size: 28px;
+          font-weight: 600;
+          color: #1a202c;
+        }
+
+        .ant-typography {
+          color: #718096;
+          font-size: 14px;
+        }
+      }
+
+      .ant-tabs {
+        .ant-tabs-nav {
+          margin-bottom: 32px;
+
+          .ant-tabs-tab {
+            font-size: 16px;
+            font-weight: 500;
+          }
+        }
+
+        .ant-tabs-content {
+          .ant-form {
+            .ant-form-item {
+              margin-bottom: 20px;
+
+              .ant-input,
+              .ant-input-password {
+                height: 48px;
+                border-radius: 8px;
+                font-size: 14px;
+
+                .ant-input-prefix {
+                  margin-right: 12px;
+                  color: #a0aec0;
+                  font-size: 16px;
+                }
+              }
+
+              .ant-btn {
+                height: 48px;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 500;
+                margin-top: 8px;
+              }
+            }
+
+            .auth-footer {
+              text-align: center;
+              margin-top: 16px;
+              color: #718096;
+
+              .ant-btn-link {
+                padding: 0;
+                margin-left: 8px;
+                font-weight: 500;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .auth-info {
+      text-align: center;
+      margin-top: 24px;
+
+      .ant-typography {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+// 响应式布局
+@media (max-width: 768px) {
+  .auth-page {
+    padding: 12px;
+
+    .auth-container {
+      max-width: 100%;
+
+      .auth-card {
+        .auth-header h2 {
+          font-size: 24px;
+        }
+
+        .ant-tabs .ant-tabs-nav .ant-tabs-tab {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+}

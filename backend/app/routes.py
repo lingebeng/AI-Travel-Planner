@@ -35,6 +35,7 @@ def register():
             raise BadRequest("Email and password are required")
 
         # Register user with Supabase Auth
+        # Email will be auto-confirmed by database trigger
         result = supabase.auth.sign_up(
             {
                 "email": email,
@@ -291,9 +292,80 @@ def get_itinerary(itinerary_id):
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
-def delete_itinerary(itinerary_id):
-    """Delete itinerary"""
+def update_itinerary(current_user, itinerary_id):
+    """Update itinerary (requires authentication)"""
     try:
+        data = request.get_json()
+        user_id = current_user["id"]
+
+        # Verify ownership before updating
+        check_response = (
+            supabase.table("itineraries")
+            .select("user_id")
+            .eq("id", itinerary_id)
+            .execute()
+        )
+
+        if not check_response.data:
+            return jsonify({"success": False, "error": "Itinerary not found"}), 404
+
+        if check_response.data[0]["user_id"] != user_id:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+        # Prepare update data
+        update_data = {
+            "title": data.get("title"),
+            "destination": data.get("destination"),
+            "start_date": data.get("start_date"),
+            "end_date": data.get("end_date"),
+            "budget": data.get("budget"),
+            "people_count": data.get("people_count"),
+            "preferences": data.get("preferences"),
+            "ai_response": data.get("ai_response"),
+            "updated_at": datetime.now().isoformat(),
+        }
+
+        # Remove None values
+        update_data = {k: v for k, v in update_data.items() if v is not None}
+
+        # Update in Supabase
+        response = (
+            supabase.table("itineraries")
+            .update(update_data)
+            .eq("id", itinerary_id)
+            .execute()
+        )
+
+        if response.data:
+            return jsonify({"success": True, "data": response.data[0]})
+        else:
+            raise Exception("Failed to update itinerary")
+
+    except Exception as e:
+        logger.error(f"Update itinerary error: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def delete_itinerary(current_user, itinerary_id):
+    """Delete itinerary (requires authentication)"""
+    try:
+        # Get user ID from authenticated user
+        user_id = current_user["id"]
+
+        # Verify ownership before deleting
+        check_response = (
+            supabase.table("itineraries")
+            .select("user_id")
+            .eq("id", itinerary_id)
+            .execute()
+        )
+
+        if not check_response.data:
+            return jsonify({"success": False, "error": "Itinerary not found"}), 404
+
+        if check_response.data[0]["user_id"] != user_id:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+
         # Delete from Supabase
         response = (
             supabase.table("itineraries").delete().eq("id", itinerary_id).execute()
@@ -411,7 +483,12 @@ def register_routes(app):
     itinerary_api.route("/save", methods=["POST"])(require_auth(save_itinerary))
     itinerary_api.route("/list", methods=["GET"])(require_auth(list_itineraries))
     itinerary_api.route("/<itinerary_id>", methods=["GET"])(get_itinerary)
-    itinerary_api.route("/<itinerary_id>", methods=["DELETE"])(delete_itinerary)
+    itinerary_api.route("/<itinerary_id>", methods=["PUT"])(
+        require_auth(update_itinerary)
+    )
+    itinerary_api.route("/<itinerary_id>", methods=["DELETE"])(
+        require_auth(delete_itinerary)
+    )
 
     # Create map API blueprint
     map_api = Blueprint("map", __name__)

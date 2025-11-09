@@ -96,16 +96,33 @@
     }
 
     .user-btn {
-      width: 36px;
+      display: flex;
+      align-items: center;
       height: 36px;
+      padding: 0 16px;
       background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
       border: 1px solid #bae6fd;
       color: #0284c7;
+      border-radius: 8px;
 
       &:hover {
         background: linear-gradient(135deg, #e0f2fe, #bae6fd);
         border-color: #7dd3fc;
-        transform: rotate(5deg) scale(1.1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+      }
+
+      .ant-avatar {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+      }
+    }
+
+    .login-btn {
+      color: #0284c7;
+
+      &:hover {
+        color: #0369a1;
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
       }
     }
   }

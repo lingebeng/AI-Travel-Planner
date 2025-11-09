@@ -1,0 +1,153 @@
+.my-itineraries-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+
+  .page-header {
+    margin-bottom: 32px;
+    text-align: center;
+
+    h2 {
+      margin-bottom: 8px;
+      font-size: 32px;
+      font-weight: 600;
+      color: #1a202c;
+    }
+
+    .ant-typography {
+      font-size: 16px;
+      color: #718096;
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+  }
+
+  .itinerary-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      transform: translateY(-4px);
+    }
+
+    .ant-card-body {
+      padding: 20px;
+    }
+
+    .ant-card-actions {
+      border-top: 1px solid #e4e4e7;
+      background-color: #fafafa;
+
+      > li {
+        margin: 8px 0;
+
+        .ant-btn {
+          width: 100%;
+        }
+      }
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e4e4e7;
+
+      .destination {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 18px;
+
+        .anticon {
+          color: #10b981;
+          font-size: 20px;
+        }
+
+        .ant-typography {
+          font-size: 18px;
+          color: #1a202c;
+        }
+      }
+    }
+
+    .card-body {
+      .info-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        font-size: 14px;
+
+        .anticon {
+          color: #718096;
+          font-size: 16px;
+        }
+
+        .ant-typography {
+          color: #4a5568;
+        }
+      }
+
+      .preferences {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+
+        .ant-typography {
+          color: #10b981;
+          font-size: 13px;
+        }
+      }
+    }
+
+    .card-footer {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #f0f0f0;
+      text-align: right;
+    }
+  }
+}
+
+// 响应式布局
+@media (max-width: 768px) {
+  .my-itineraries-page {
+    padding: 16px;
+
+    .page-header {
+      h2 {
+        font-size: 24px;
+      }
+
+      .ant-typography {
+        font-size: 14px;
+      }
+    }
+
+    .itinerary-card {
+      .card-header {
+        .destination {
+          font-size: 16px;
+
+          .anticon {
+            font-size: 18px;
+          }
+
+          .ant-typography {
+            font-size: 16px;
+          }
+        }
+      }
+    }
+  }
+}

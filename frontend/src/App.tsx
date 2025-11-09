@@ -9,7 +9,13 @@ import 'dayjs/locale/zh-cn';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
 import ItineraryPage from './pages/ItineraryPage';
+import AuthPage from './pages/AuthPage';
+import MyItinerariesPage from './pages/MyItinerariesPage';
 import AppHeader from './components/AppHeader';
+import PrivateRoute from './components/PrivateRoute';
+
+// Import contexts
+import { AuthProvider } from './contexts/AuthContext';
 
 // Import global styles
 import './styles/global.scss';
@@ -92,18 +98,29 @@ const App: React.FC = () => {
         },
       }}
     >
-      <Router>
-        <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
-          <AppHeader />
-          <Content style={{ padding: '24px' }}>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/planner" element={<PlannerPage />} />
-              <Route path="/itinerary/:id" element={<ItineraryPage />} />
-            </Routes>
-          </Content>
-        </Layout>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+            <AppHeader />
+            <Content style={{ padding: '24px' }}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/planner" element={<PlannerPage />} />
+                <Route path="/itinerary/:id" element={<ItineraryPage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route
+                  path="/my-itineraries"
+                  element={
+                    <PrivateRoute>
+                      <MyItinerariesPage />
+                    </PrivateRoute>
+                  }
+                />
+              </Routes>
+            </Content>
+          </Layout>
+        </Router>
+      </AuthProvider>
     </ConfigProvider>
   );
 };

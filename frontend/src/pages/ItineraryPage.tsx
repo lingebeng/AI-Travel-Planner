@@ -17,7 +17,8 @@ import {
   InputNumber,
   message,
   Spin,
-  Drawer
+  Drawer,
+  Modal
 } from 'antd';
 import {
   EnvironmentOutlined,
@@ -33,8 +34,10 @@ import {
   DownloadOutlined,
   EditOutlined,
   SaveOutlined,
-  CloseOutlined
+  CloseOutlined,
+  CloudUploadOutlined
 } from '@ant-design/icons';
+import { useAuth } from '../contexts/AuthContext';
 import { plannerService } from '../services/plannerService';
 import { generatePDF, generatePDFFromHTML } from '../services/pdfService';
 import SimpleMapView from '../components/SimpleMapView';
@@ -48,6 +51,7 @@ const ItineraryPage: React.FC = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, getAccessToken } = useAuth();
 
   const [itinerary, setItinerary] = useState<any>(location.state?.itinerary || null);
   const [loading, setLoading] = useState(!location.state?.itinerary);
@@ -55,12 +59,16 @@ const ItineraryPage: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [editForm] = Form.useForm();
   const [mapDrawerVisible, setMapDrawerVisible] = useState(false);
+  const [isSaved, setIsSaved] = useState(false); // 是否已保存到云端
+  const [saveLoading, setSaveLoading] = useState(false);
   const itineraryRef = useRef<HTMLDivElement>(null);
 
   // Load itinerary if not in state
   useEffect(() => {
     if (!itinerary && id && id !== 'preview') {
       loadItinerary();
+    } else if (id && id !== 'preview') {
+      setIsSaved(true); // 如果有ID且不是preview，说明已保存
     }
   }, [id]);
 
@@ -70,11 +78,62 @@ const ItineraryPage: React.FC = () => {
       const result = await plannerService.getItinerary(id!);
       if (result.success) {
         setItinerary(result.data);
+        setIsSaved(true);
       }
     } catch (error) {
       message.error('Failed to load itinerary');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 保存到云端
+  const handleSaveToCloud = async () => {
+    if (!user) {
+      Modal.confirm({
+        title: '需要登录',
+        content: '保存行程需要先登录账号，是否前往登录？',
+        onOk: () => navigate('/auth', { state: { from: location } }),
+      });
+      return;
+    }
+
+    try {
+      setSaveLoading(true);
+      const token = await getAccessToken();
+
+      const response = await fetch('http://localhost:5000/api/itinerary/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          destination: itinerary.metadata?.destination,
+          start_date: itinerary.metadata?.start_date,
+          end_date: itinerary.metadata?.end_date,
+          budget: itinerary.metadata?.budget,
+          people_count: itinerary.metadata?.people_count,
+          preferences: itinerary.metadata?.preferences || {},
+          ai_response: itinerary,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        message.success('行程已保存到云端！');
+        setIsSaved(true);
+        // 更新URL为真实ID
+        navigate(`/itinerary/${data.data.id}`, { replace: true, state: { itinerary } });
+      } else {
+        message.error(data.error || '保存失败');
+      }
+    } catch (error) {
+      console.error('Save failed:', error);
+      message.error('保存失败，请重试');
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -119,16 +178,44 @@ const ItineraryPage: React.FC = () => {
         summary: values.summary,
         metadata: {
           ...itinerary.metadata,
-          budget: values.budget
+          budget: values.budget,
+          destination: values.destination,
         }
       };
 
       setItinerary(updatedItinerary);
       setEditMode(false);
-      message.success('修改已保存');
 
-      // TODO: Save to backend
-      // await plannerService.updateItinerary(id, updatedItinerary);
+      // 如果已保存到云端，则更新云端数据
+      if (isSaved && id && id !== 'preview' && user) {
+        try {
+          const token = await getAccessToken();
+          const response = await fetch(`http://localhost:5000/api/itinerary/${id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              destination: values.destination || itinerary.metadata?.destination,
+              budget: values.budget || itinerary.metadata?.budget,
+              ai_response: updatedItinerary,
+            }),
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            message.success('修改已保存到云端');
+          } else {
+            message.warning('本地修改已保存，但云端同步失败');
+          }
+        } catch (error) {
+          console.error('Failed to sync to cloud:', error);
+          message.warning('本地修改已保存，但云端同步失败');
+        }
+      } else {
+        message.success('修改已保存');
+      }
     } catch (error) {
       console.error('Save failed:', error);
       message.error('保存失败');
@@ -237,7 +324,7 @@ const ItineraryPage: React.FC = () => {
               )}
             </Col>
             <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Space>
+              <Space wrap>
                 {editMode ? (
                   <>
                     <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit}>
@@ -249,6 +336,16 @@ const ItineraryPage: React.FC = () => {
                   </>
                 ) : (
                   <>
+                    {!isSaved && (
+                      <Button
+                        icon={<CloudUploadOutlined />}
+                        type="primary"
+                        onClick={handleSaveToCloud}
+                        loading={saveLoading}
+                      >
+                        保存到云端
+                      </Button>
+                    )}
                     <Button icon={<EditOutlined />} onClick={handleEdit}>
                       编辑
                     </Button>
