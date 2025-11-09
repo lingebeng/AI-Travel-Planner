@@ -80,14 +80,47 @@ const MyItinerariesPage: React.FC = () => {
     }
   };
 
-  const handleView = (id: string) => {
-    navigate(`/itinerary/${id}`);
+  const handleView = (itinerary: Itinerary) => {
+    // 传递完整的行程数据，从 ai_response 中提取
+    const itineraryData = itinerary.ai_response && typeof itinerary.ai_response === 'object'
+      ? {
+          ...itinerary.ai_response,
+          metadata: {
+            ...itinerary.ai_response.metadata,
+            destination: itinerary.destination,
+            start_date: itinerary.start_date,
+            end_date: itinerary.end_date,
+            budget: itinerary.budget,
+            people_count: itinerary.people_count,
+            preferences: itinerary.preferences,
+          }
+        }
+      : null;
+
+    navigate(`/itinerary/${itinerary.id}`, {
+      state: { itinerary: itineraryData }
+    });
   };
 
   const handleEdit = (itinerary: Itinerary) => {
     // 跳转到行程页面，并传递行程数据
+    const itineraryData = itinerary.ai_response && typeof itinerary.ai_response === 'object'
+      ? {
+          ...itinerary.ai_response,
+          metadata: {
+            ...itinerary.ai_response.metadata,
+            destination: itinerary.destination,
+            start_date: itinerary.start_date,
+            end_date: itinerary.end_date,
+            budget: itinerary.budget,
+            people_count: itinerary.people_count,
+            preferences: itinerary.preferences,
+          }
+        }
+      : null;
+
     navigate(`/itinerary/${itinerary.id}`, {
-      state: { itinerary: itinerary.ai_response }
+      state: { itinerary: itineraryData }
     });
   };
 
@@ -132,7 +165,7 @@ const MyItinerariesPage: React.FC = () => {
                   <Button
                     type="text"
                     icon={<EyeOutlined />}
-                    onClick={() => handleView(itinerary.id)}
+                    onClick={() => handleView(itinerary)}
                   >
                     查看详情
                   </Button>,

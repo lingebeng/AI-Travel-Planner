@@ -58,7 +58,9 @@ const ItineraryPage: React.FC = () => {
   const [loading, setLoading] = useState(!location.state?.itinerary);
   const [activeDay, setActiveDay] = useState('1');
   const [editMode, setEditMode] = useState(false);
+  const [advancedEditMode, setAdvancedEditMode] = useState(false); // 高级编辑模式
   const [editForm] = Form.useForm();
+  const [jsonEditValue, setJsonEditValue] = useState(''); // JSON 编辑器的值
   const [mapDrawerVisible, setMapDrawerVisible] = useState(false);
   const [isSaved, setIsSaved] = useState(false); // 是否已保存到云端
   const [saveLoading, setSaveLoading] = useState(false);
@@ -77,12 +79,53 @@ const ItineraryPage: React.FC = () => {
     try {
       setLoading(true);
       const result = await plannerService.getItinerary(id!);
-      if (result.success) {
-        setItinerary(result.data);
+      if (result.success && result.data) {
+        // 数据库返回的数据结构：{ id, destination, budget, ai_response: {...} }
+        // 我们需要使用 ai_response 作为行程数据，但要合并基本信息
+        const dbData = result.data;
+
+        // 如果有 ai_response，使用它；否则构建基本结构
+        let itineraryData;
+        if (dbData.ai_response && typeof dbData.ai_response === 'object') {
+          // 使用 ai_response 作为基础，但确保 metadata 是最新的
+          itineraryData = {
+            ...dbData.ai_response,
+            metadata: {
+              ...dbData.ai_response.metadata,
+              destination: dbData.destination,
+              start_date: dbData.start_date,
+              end_date: dbData.end_date,
+              budget: dbData.budget,
+              people_count: dbData.people_count,
+              preferences: dbData.preferences,
+            }
+          };
+        } else {
+          // 如果没有 ai_response，构建基本结构
+          itineraryData = {
+            metadata: {
+              destination: dbData.destination,
+              start_date: dbData.start_date,
+              end_date: dbData.end_date,
+              budget: dbData.budget,
+              people_count: dbData.people_count,
+              preferences: dbData.preferences,
+            },
+            summary: '',
+            daily_itinerary: [],
+            budget_breakdown: null,
+          };
+        }
+
+        setItinerary(itineraryData);
         setIsSaved(true);
+      } else {
+        message.error('行程不存在');
+        navigate('/my-itineraries');
       }
     } catch (error) {
-      message.error('Failed to load itinerary');
+      console.error('Failed to load itinerary:', error);
+      message.error('加载失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -161,31 +204,64 @@ const ItineraryPage: React.FC = () => {
   // Handle edit
   const handleEdit = () => {
     setEditMode(true);
+    setAdvancedEditMode(false);
     // Populate form with current values
     editForm.setFieldsValue({
-      summary: itinerary.summary,
+      destination: itinerary.metadata?.destination,
+      start_date: itinerary.metadata?.start_date,
+      end_date: itinerary.metadata?.end_date,
+      people_count: itinerary.metadata?.people_count,
       budget: itinerary.metadata?.budget,
-      // Add more fields as needed
+      summary: itinerary.summary,
     });
+  };
+
+  // 高级编辑模式 - 直接编辑 JSON
+  const handleAdvancedEdit = () => {
+    setEditMode(true);
+    setAdvancedEditMode(true);
+    // 将当前行程数据转换为格式化的 JSON 字符串
+    setJsonEditValue(JSON.stringify(itinerary, null, 2));
   };
 
   const handleSaveEdit = async () => {
     try {
-      const values = await editForm.validateFields();
+      let updatedItinerary;
 
-      // Update local state
-      const updatedItinerary = {
-        ...itinerary,
-        summary: values.summary,
-        metadata: {
-          ...itinerary.metadata,
-          budget: values.budget,
-          destination: values.destination,
+      if (advancedEditMode) {
+        // 高级编辑模式：解析 JSON
+        try {
+          updatedItinerary = JSON.parse(jsonEditValue);
+          // 验证基本结构
+          if (!updatedItinerary.metadata) {
+            throw new Error('缺少 metadata 字段');
+          }
+        } catch (parseError: any) {
+          message.error(`JSON 格式错误: ${parseError.message}`);
+          return;
         }
-      };
+      } else {
+        // 简单编辑模式：从表单获取值
+        const values = await editForm.validateFields();
+
+        // Update local state with all edited fields
+        updatedItinerary = {
+          ...itinerary,
+          summary: values.summary,
+          metadata: {
+            ...itinerary.metadata,
+            destination: values.destination,
+            start_date: values.start_date,
+            end_date: values.end_date,
+            people_count: values.people_count,
+            budget: values.budget,
+          }
+        };
+      }
 
       setItinerary(updatedItinerary);
       setEditMode(false);
+      setAdvancedEditMode(false);
 
       // 如果已保存到云端，则更新云端数据
       if (isSaved && id && id !== 'preview' && user) {
@@ -198,8 +274,11 @@ const ItineraryPage: React.FC = () => {
               'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-              destination: values.destination || itinerary.metadata?.destination,
-              budget: values.budget || itinerary.metadata?.budget,
+              destination: updatedItinerary.metadata?.destination,
+              start_date: updatedItinerary.metadata?.start_date,
+              end_date: updatedItinerary.metadata?.end_date,
+              people_count: updatedItinerary.metadata?.people_count,
+              budget: updatedItinerary.metadata?.budget,
               ai_response: updatedItinerary,
             }),
           });
@@ -225,7 +304,9 @@ const ItineraryPage: React.FC = () => {
 
   const handleCancelEdit = () => {
     setEditMode(false);
+    setAdvancedEditMode(false);
     editForm.resetFields();
+    setJsonEditValue('');
   };
 
   // Handle location click from timeline - 直接打开外部地图
@@ -297,80 +378,187 @@ const ItineraryPage: React.FC = () => {
       <div className="itinerary-container" ref={itineraryRef} id="itinerary-content">
         {/* Header */}
         <Card className="itinerary-header">
-          <Row gutter={[24, 24]} align="middle">
-            <Col xs={24} lg={16}>
-              {editMode ? (
-                <Form form={editForm} layout="vertical">
-                  <Form.Item name="destination" label="目的地">
-                    <Input defaultValue={itinerary.metadata?.destination} />
-                  </Form.Item>
-                </Form>
-              ) : (
-                <>
-                  <Title level={2} className="destination-title">
-                    {itinerary.metadata?.destination || 'Your Trip'}
-                  </Title>
-                  <Space size="large" wrap>
-                    <Text>
-                      <CalendarOutlined /> {itinerary.metadata?.start_date} 至 {itinerary.metadata?.end_date}
-                    </Text>
-                    <Text>
-                      <TeamOutlined /> {itinerary.metadata?.people_count} 人
-                    </Text>
-                    <Text>
-                      <DollarOutlined /> ¥{itinerary.metadata?.budget}
-                    </Text>
-                  </Space>
-                </>
-              )}
-            </Col>
-            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Space wrap>
-                {editMode ? (
-                  <>
-                    <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit}>
-                      保存
+          {editMode ? (
+            advancedEditMode ? (
+              // 高级编辑模式：JSON 编辑器
+              <div>
+                <Title level={4}>高级编辑 - 直接编辑 JSON 数据</Title>
+                <Paragraph type="secondary">
+                  直接编辑完整的行程数据（JSON 格式）。请确保格式正确，否则可能导致数据丢失。
+                </Paragraph>
+                <TextArea
+                  value={jsonEditValue}
+                  onChange={(e) => setJsonEditValue(e.target.value)}
+                  rows={25}
+                  style={{
+                    fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                    fontSize: '13px',
+                    backgroundColor: '#f5f5f5',
+                  }}
+                  placeholder="在此编辑 JSON 数据..."
+                />
+                <div style={{ marginTop: 16 }}>
+                  <Space>
+                    <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit} size="large">
+                      保存修改
                     </Button>
-                    <Button icon={<CloseOutlined />} onClick={handleCancelEdit}>
+                    <Button icon={<CloseOutlined />} onClick={handleCancelEdit} size="large">
                       取消
                     </Button>
-                  </>
-                ) : (
-                  <>
-                    {!isSaved && (
-                      <Button
-                        icon={<CloudUploadOutlined />}
-                        type="primary"
-                        onClick={handleSaveToCloud}
-                        loading={saveLoading}
-                      >
-                        保存到云端
+                    <Button
+                      onClick={() => {
+                        try {
+                          const parsed = JSON.parse(jsonEditValue);
+                          setJsonEditValue(JSON.stringify(parsed, null, 2));
+                          message.success('JSON 格式化成功');
+                        } catch (e: any) {
+                          message.error(`JSON 格式错误: ${e.message}`);
+                        }
+                      }}
+                    >
+                      格式化 JSON
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setAdvancedEditMode(false);
+                      }}
+                    >
+                      切换到简单编辑
+                    </Button>
+                  </Space>
+                </div>
+              </div>
+            ) : (
+              // 简单编辑模式：表单编辑
+              <Form form={editForm} layout="vertical">
+                <Row gutter={[24, 16]}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="destination"
+                      label="目的地"
+                      rules={[{ required: true, message: '请输入目的地' }]}
+                    >
+                      <Input size="large" placeholder="例如：杭州" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="budget"
+                      label="预算（元）"
+                      rules={[{ required: true, message: '请输入预算' }]}
+                    >
+                      <InputNumber
+                        size="large"
+                        style={{ width: '100%' }}
+                        min={0}
+                        formatter={value => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={value => value!.replace(/\¥\s?|(,*)/g, '')}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name="start_date"
+                      label="开始日期"
+                      rules={[{ required: true, message: '请输入开始日期' }]}
+                    >
+                      <Input size="large" type="date" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name="end_date"
+                      label="结束日期"
+                      rules={[{ required: true, message: '请输入结束日期' }]}
+                    >
+                      <Input size="large" type="date" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name="people_count"
+                      label="出行人数"
+                      rules={[{ required: true, message: '请输入出行人数' }]}
+                    >
+                      <InputNumber size="large" style={{ width: '100%' }} min={1} max={20} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Form.Item name="summary" label="行程亮点">
+                      <TextArea rows={4} placeholder="简要描述行程的精彩之处..." />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Space>
+                      <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit} size="large">
+                        保存修改
                       </Button>
-                    )}
-                    <Button icon={<EditOutlined />} onClick={handleEdit}>
-                      编辑
+                      <Button icon={<CloseOutlined />} onClick={handleCancelEdit} size="large">
+                        取消
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setAdvancedEditMode(true);
+                          setJsonEditValue(JSON.stringify(itinerary, null, 2));
+                        }}
+                      >
+                        切换到高级编辑
+                      </Button>
+                    </Space>
+                  </Col>
+                </Row>
+              </Form>
+            )
+          ) : (
+            <Row gutter={[24, 24]} align="middle">
+              <Col xs={24} lg={16}>
+                <Title level={2} className="destination-title">
+                  {itinerary.metadata?.destination || 'Your Trip'}
+                </Title>
+                <Space size="large" wrap>
+                  <Text>
+                    <CalendarOutlined /> {itinerary.metadata?.start_date} 至 {itinerary.metadata?.end_date}
+                  </Text>
+                  <Text>
+                    <TeamOutlined /> {itinerary.metadata?.people_count} 人
+                  </Text>
+                  <Text>
+                    <DollarOutlined /> ¥{itinerary.metadata?.budget?.toLocaleString()}
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+                <Space wrap>
+                  {!isSaved && (
+                    <Button
+                      icon={<CloudUploadOutlined />}
+                      type="primary"
+                      onClick={handleSaveToCloud}
+                      loading={saveLoading}
+                    >
+                      保存到云端
                     </Button>
-                    <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPDF}>
-                      下载PDF
-                    </Button>
-                  </>
-                )}
-              </Space>
-            </Col>
-          </Row>
+                  )}
+                  <Button icon={<EditOutlined />} onClick={handleEdit}>
+                    简单编辑
+                  </Button>
+                  <Button onClick={handleAdvancedEdit}>
+                    高级编辑
+                  </Button>
+                  <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPDF}>
+                    下载PDF
+                  </Button>
+                </Space>
+              </Col>
+            </Row>
+          )}
         </Card>
 
         {/* Summary */}
-        {itinerary.summary && (
+        {!editMode && itinerary.summary && (
           <Card className="summary-card">
             <Title level={4}>行程亮点</Title>
-            {editMode ? (
-              <Form.Item name="summary">
-                <TextArea rows={3} />
-              </Form.Item>
-            ) : (
-              <Paragraph className="summary-text">{itinerary.summary}</Paragraph>
-            )}
+            <Paragraph className="summary-text">{itinerary.summary}</Paragraph>
           </Card>
         )}
 
