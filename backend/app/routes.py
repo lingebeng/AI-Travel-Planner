@@ -10,6 +10,8 @@ from werkzeug.exceptions import BadRequest
 
 from .auth import require_auth
 from .services import ai_service, map_service, voice_service
+from .services.ai_expense_analyzer import ai_expense_analyzer
+from .services.expense_service import expense_service
 from .supabase_client import supabase
 
 
@@ -461,6 +463,234 @@ def get_weather():
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
+# Expense management routes
+def add_expense(current_user: dict):
+    """Add a new expense record"""
+    try:
+        user_id = current_user["id"]
+        data = request.get_json()
+
+        # Debug: Log the received data
+        logger.info(f"Received expense data: {data}")
+        logger.info(f"User ID: {user_id}")
+
+        # Validate required fields
+        itinerary_id = data.get("itinerary_id")
+        category = data.get("category")
+        amount = data.get("amount")
+
+        if not all([itinerary_id, category, amount is not None]):
+            raise BadRequest("itinerary_id, category, and amount are required")
+
+        # Create expense
+        expense = expense_service.create_expense(
+            user_id=user_id,
+            itinerary_id=itinerary_id,
+            category=category,
+            amount=float(amount),
+            description=data.get("description"),
+            expense_date=data.get("expense_date"),
+            location=data.get("location"),
+            payment_method=data.get("payment_method"),
+            voice_input=data.get("voice_input", False),
+        )
+
+        logger.info(f"Expense created: {expense['id']}")
+        return jsonify({"success": True, "data": expense})
+
+    except BadRequest as e:
+        logger.error(f"BadRequest error creating expense: {e}")
+        return jsonify({"success": False, "error": str(e)}), 400
+    except ValueError as e:
+        logger.error(f"ValueError creating expense: {e}")
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error creating expense: {e}", exc_info=True)
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def list_expenses(current_user: dict):
+    """List expenses with optional filters"""
+    try:
+        user_id = current_user["id"]
+        itinerary_id = request.args.get("itinerary_id")
+        category = request.args.get("category")
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+
+        # Get expenses
+        expenses = expense_service.get_expenses(
+            user_id=user_id,
+            itinerary_id=itinerary_id,
+            category=category,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        return jsonify({"success": True, "data": expenses})
+
+    except Exception as e:
+        logger.error(f"Error listing expenses: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def get_expense(current_user: dict, expense_id: str):
+    """Get a single expense by ID"""
+    try:
+        user_id = current_user["id"]
+        expense = expense_service.get_expense_by_id(expense_id, user_id)
+
+        if not expense:
+            return jsonify({"success": False, "error": "Expense not found"}), 404
+
+        return jsonify({"success": True, "data": expense})
+
+    except Exception as e:
+        logger.error(f"Error getting expense: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def update_expense(current_user: dict, expense_id: str):
+    """Update an expense"""
+    try:
+        user_id = current_user["id"]
+        data = request.get_json()
+
+        # Update expense
+        expense = expense_service.update_expense(expense_id, user_id, data)
+
+        logger.info(f"Expense updated: {expense_id}")
+        return jsonify({"success": True, "data": expense})
+
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error updating expense: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def delete_expense(current_user: dict, expense_id: str):
+    """Delete an expense"""
+    try:
+        user_id = current_user["id"]
+        expense_service.delete_expense(expense_id, user_id)
+
+        logger.info(f"Expense deleted: {expense_id}")
+        return jsonify({"success": True, "message": "Expense deleted"})
+
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error deleting expense: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def get_expense_stats(current_user: dict):
+    """Get expense statistics for an itinerary"""
+    try:
+        user_id = current_user["id"]
+        itinerary_id = request.args.get("itinerary_id")
+
+        if not itinerary_id:
+            raise BadRequest("itinerary_id is required")
+
+        # Get statistics
+        stats = expense_service.get_expense_statistics(user_id, itinerary_id)
+
+        return jsonify({"success": True, "data": stats})
+
+    except BadRequest as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error getting expense stats: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def parse_voice_expense():
+    """Parse voice text into structured expense data using AI"""
+    try:
+        data = request.get_json()
+        voice_text = data.get("text")
+
+        if not voice_text:
+            raise BadRequest("text is required")
+
+        # Parse using AI
+        result = ai_expense_analyzer.parse_voice_expense(voice_text)
+
+        return jsonify(result)
+
+    except BadRequest as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error parsing voice expense: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+def analyze_budget(current_user: dict):
+    """AI-powered budget analysis"""
+    try:
+        user_id = current_user["id"]
+        data = request.get_json()
+
+        itinerary_id = data.get("itinerary_id")
+        if not itinerary_id:
+            raise BadRequest("itinerary_id is required")
+
+        # Get itinerary data
+        itinerary_response = (
+            supabase.table("itineraries")
+            .select("*")
+            .eq("id", itinerary_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        if not itinerary_response.data or len(itinerary_response.data) == 0:
+            return jsonify({"success": False, "error": "Itinerary not found"}), 404
+
+        itinerary = itinerary_response.data[0]
+
+        # Get expenses
+        expenses = expense_service.get_expenses(user_id, itinerary_id)
+
+        # Extract budget breakdown from ai_response
+        ai_response = itinerary.get("ai_response", {})
+        budget_breakdown = ai_response.get("budget_breakdown", {})
+        total_budget = itinerary.get("budget", 0)
+        destination = itinerary.get("destination", "")
+
+        # Calculate remaining days (simplified, you may want to improve this)
+        from datetime import datetime
+
+        end_date_str = itinerary.get("end_date")
+        remaining_days = 0
+        if end_date_str:
+            try:
+                end_date = datetime.fromisoformat(end_date_str)
+                today = datetime.now()
+                remaining_days = max(0, (end_date - today).days)
+            except:
+                pass
+
+        # Analyze budget
+        result = ai_expense_analyzer.analyze_budget(
+            expenses=expenses,
+            budget_breakdown=budget_breakdown,
+            total_budget=total_budget,
+            destination=destination,
+            remaining_days=remaining_days,
+        )
+
+        return jsonify(result)
+
+    except BadRequest as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error analyzing budget: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
 def register_routes(app):
     """Register all blueprints with the app"""
     # Create authentication blueprint
@@ -497,6 +727,17 @@ def register_routes(app):
     map_api.route("/route", methods=["GET"])(get_route)
     map_api.route("/weather", methods=["GET"])(get_weather)
 
+    # Create expense API blueprint
+    expense_api = Blueprint("expenses", __name__)
+    expense_api.route("/add", methods=["POST"])(require_auth(add_expense))
+    expense_api.route("/list", methods=["GET"])(require_auth(list_expenses))
+    expense_api.route("/<expense_id>", methods=["GET"])(require_auth(get_expense))
+    expense_api.route("/<expense_id>", methods=["PUT"])(require_auth(update_expense))
+    expense_api.route("/<expense_id>", methods=["DELETE"])(require_auth(delete_expense))
+    expense_api.route("/stats", methods=["GET"])(require_auth(get_expense_stats))
+    expense_api.route("/voice-parse", methods=["POST"])(parse_voice_expense)
+    expense_api.route("/ai-analysis", methods=["POST"])(require_auth(analyze_budget))
+
     # Create main API blueprint and register all sub-blueprints
     main_api = Blueprint("api", __name__, url_prefix="/api")
     main_api.route("/health", methods=["GET"])(health_check)
@@ -504,6 +745,7 @@ def register_routes(app):
     main_api.register_blueprint(voice_api, url_prefix="/voice")
     main_api.register_blueprint(itinerary_api, url_prefix="/itinerary")
     main_api.register_blueprint(map_api, url_prefix="/map")
+    main_api.register_blueprint(expense_api, url_prefix="/expenses")
 
     # Register main blueprint with app
     app.register_blueprint(main_api)

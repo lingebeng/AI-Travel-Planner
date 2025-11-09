@@ -39,10 +39,11 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { plannerService } from '../services/plannerService';
-import { generatePDF, generatePDFFromHTML } from '../services/pdfService';
+import { generatePDFFromHTML } from '../services/pdfService';
 import { API_ENDPOINTS } from '../config/api';
 import SimpleMapView from '../components/SimpleMapView';
 import HorizontalTimeline from '../components/HorizontalTimeline';
+import ExpenseTracker from '../components/ExpenseTracker';
 import './ItineraryPage.scss';
 
 const { Title, Paragraph, Text } = Typography;
@@ -787,6 +788,14 @@ const ItineraryPage: React.FC = () => {
                     </Row>
                   </TabPane>
                 ))}
+
+                {/* Expense Tracker Tab */}
+                <TabPane tab="开销记录" key="expenses">
+                  <ExpenseTracker
+                    itineraryId={id!}
+                    budget={itinerary.metadata?.budget}
+                  />
+                </TabPane>
               </Tabs>
             </Card>
           </Col>

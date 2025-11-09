@@ -61,4 +61,9 @@ export const plannerService = {
   async getDestinationInsights(destination: string): Promise<any> {
     return apiClient.get(`/insights/${destination}`);
   },
+
+  // Get user's itineraries
+  async getItineraries(): Promise<ItineraryResponse> {
+    return apiClient.get('/itinerary/list');
+  },
 };

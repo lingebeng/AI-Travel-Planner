@@ -1,0 +1,54 @@
+.my-expenses-page {
+  min-height: calc(100vh - 88px);
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #fafbfc 100%);
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 32px;
+
+    h2 {
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+
+  .ant-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .ant-statistic {
+    .ant-statistic-title {
+      font-size: 14px;
+      color: #71717a;
+    }
+
+    .ant-statistic-content {
+      font-size: 24px;
+      font-weight: 600;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .my-expenses-page {
+    padding: 16px;
+
+    .page-header h2 {
+      font-size: 24px;
+    }
+
+    .ant-statistic-content {
+      font-size: 20px !important;
+    }
+  }
+}

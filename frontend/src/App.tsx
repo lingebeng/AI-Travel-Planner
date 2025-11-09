@@ -11,6 +11,7 @@ import PlannerPage from './pages/PlannerPage';
 import ItineraryPage from './pages/ItineraryPage';
 import AuthPage from './pages/AuthPage';
 import MyItinerariesPage from './pages/MyItinerariesPage';
+import MyExpensesPage from './pages/MyExpensesPage';
 import AppHeader from './components/AppHeader';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -113,6 +114,14 @@ const App: React.FC = () => {
                   element={
                     <PrivateRoute>
                       <MyItinerariesPage />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/my-expenses"
+                  element={
+                    <PrivateRoute>
+                      <MyExpensesPage />
                     </PrivateRoute>
                   }
                 />

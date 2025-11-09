@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Space, Button, Typography, Dropdown, Avatar } from 'antd';
-import { CompassOutlined, HomeOutlined, UserOutlined, LogoutOutlined, HistoryOutlined, LoginOutlined } from '@ant-design/icons';
+import { CompassOutlined, HomeOutlined, UserOutlined, LogoutOutlined, HistoryOutlined, LoginOutlined, DollarOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +25,12 @@ const AppHeader: React.FC = () => {
       label: '我的行程',
       icon: <HistoryOutlined />,
       onClick: () => navigate('/my-itineraries'),
+    },
+    {
+      key: 'my-expenses',
+      label: '我的开销',
+      icon: <DollarOutlined />,
+      onClick: () => navigate('/my-expenses'),
     },
     {
       type: 'divider',
