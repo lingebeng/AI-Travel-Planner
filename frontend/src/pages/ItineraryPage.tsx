@@ -40,6 +40,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { plannerService } from '../services/plannerService';
 import { generatePDF, generatePDFFromHTML } from '../services/pdfService';
+import { API_ENDPOINTS } from '../config/api';
 import SimpleMapView from '../components/SimpleMapView';
 import './ItineraryPage.scss';
 
@@ -102,7 +103,7 @@ const ItineraryPage: React.FC = () => {
       setSaveLoading(true);
       const token = await getAccessToken();
 
-      const response = await fetch('http://localhost:5000/api/itinerary/save', {
+      const response = await fetch(API_ENDPOINTS.ITINERARY_SAVE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +191,7 @@ const ItineraryPage: React.FC = () => {
       if (isSaved && id && id !== 'preview' && user) {
         try {
           const token = await getAccessToken();
-          const response = await fetch(`http://localhost:5000/api/itinerary/${id}`, {
+          const response = await fetch(API_ENDPOINTS.ITINERARY_UPDATE(id), {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

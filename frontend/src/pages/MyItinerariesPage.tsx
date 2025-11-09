@@ -3,6 +3,7 @@ import { Card, Row, Col, Typography, Button, Empty, Spin, Tag, message, Popconfi
 import { CalendarOutlined, UserOutlined, DollarOutlined, EnvironmentOutlined, DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { API_ENDPOINTS } from '../config/api';
 import dayjs from 'dayjs';
 import './MyItinerariesPage.scss';
 
@@ -31,7 +32,7 @@ const MyItinerariesPage: React.FC = () => {
     setLoading(true);
     try {
       const token = await getAccessToken();
-      const response = await fetch('http://localhost:5000/api/itinerary/list', {
+      const response = await fetch(API_ENDPOINTS.ITINERARY_LIST, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -58,7 +59,7 @@ const MyItinerariesPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       const token = await getAccessToken();
-      const response = await fetch(`http://localhost:5000/api/itinerary/${id}`, {
+      const response = await fetch(API_ENDPOINTS.ITINERARY_DELETE(id), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
