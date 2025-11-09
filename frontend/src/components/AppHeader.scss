@@ -58,71 +58,87 @@
   .nav-menu {
     display: flex;
     align-items: center;
+    gap: 12px;
 
     button {
       font-size: 15px;
-      height: 36px;
+      height: 38px;
       border-radius: 8px;
-      transition: all 0.3s ease;
-
-      &.active {
-        background: linear-gradient(135deg, #f0fdf5, #dcfce7);
-        color: #16a34a;
-      }
-
-      &:hover:not(.active) {
-        transform: translateY(-2px);
-      }
-    }
-
-    .planner-btn {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      border: none;
-      color: white;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       font-weight: 500;
-      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
 
-      &:hover {
-        background: linear-gradient(135deg, #16a34a, #15803d);
-        color: white !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+      .anticon {
+        font-size: 16px;
       }
 
-      &.active {
-        background: linear-gradient(135deg, #15803d, #14532d);
-        color: white;
+      // 通用导航按钮样式
+      &:not(.user-btn):not(.login-btn) {
+        color: #475569;
+        background: transparent;
+        border: 1px solid transparent;
+
+        &:hover {
+          color: #16a34a;
+          background: linear-gradient(135deg, #f0fdf5, #dcfce7);
+          border-color: #bbf7d0;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+        }
+
+        &.active {
+          color: #16a34a;
+          background: linear-gradient(135deg, #f0fdf5, #dcfce7);
+          border-color: #86efac;
+          box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+          font-weight: 600;
+
+          .anticon {
+            transform: scale(1.1);
+          }
+        }
       }
     }
 
+    // 用户菜单按钮
     .user-btn {
       display: flex;
       align-items: center;
-      height: 36px;
+      height: 38px;
       padding: 0 16px;
       background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
       border: 1px solid #bae6fd;
       color: #0284c7;
       border-radius: 8px;
+      font-weight: 500;
 
       &:hover {
         background: linear-gradient(135deg, #e0f2fe, #bae6fd);
         border-color: #7dd3fc;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
       }
 
       .ant-avatar {
-        background: linear-gradient(135deg, #22c55e, #16a34a);
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
       }
     }
 
+    // 登录按钮
     .login-btn {
       color: #0284c7;
+      border: 1px solid #bae6fd;
+      background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+      font-weight: 500;
 
       &:hover {
         color: #0369a1;
-        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+        border-color: #7dd3fc;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
       }
     }
   }
@@ -141,13 +157,30 @@
     }
 
     .nav-menu {
+      gap: 8px;
+
       button {
         font-size: 14px;
-        height: 32px;
+        height: 34px;
+        padding: 0 12px;
+
+        .anticon {
+          font-size: 14px;
+        }
+
+        // 移动端隐藏文字，只显示图标
+        span:not(.anticon) {
+          display: none;
+        }
       }
 
-      .planner-btn {
-        padding: 0 16px;
+      .user-btn {
+        padding: 0 12px;
+
+        // 移动端只显示头像
+        span:not(.ant-avatar) {
+          display: none;
+        }
       }
     }
   }

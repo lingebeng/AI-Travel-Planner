@@ -21,21 +21,6 @@ const AppHeader: React.FC = () => {
 
   const userMenuItems: MenuProps['items'] = [
     {
-      key: 'my-itineraries',
-      label: '我的行程',
-      icon: <HistoryOutlined />,
-      onClick: () => navigate('/my-itineraries'),
-    },
-    {
-      key: 'my-expenses',
-      label: '我的开销',
-      icon: <DollarOutlined />,
-      onClick: () => navigate('/my-expenses'),
-    },
-    {
-      type: 'divider',
-    },
-    {
       key: 'logout',
       label: '退出登录',
       icon: <LogoutOutlined />,
@@ -64,13 +49,34 @@ const AppHeader: React.FC = () => {
             首页
           </Button>
           <Button
-            type="primary"
-            ghost
+            type="text"
+            icon={<CompassOutlined />}
             onClick={() => navigate('/planner')}
-            className={`planner-btn ${location.pathname === '/planner' ? 'active' : ''}`}
+            className={location.pathname === '/planner' ? 'active' : ''}
           >
             开始规划
           </Button>
+
+          {user && (
+            <>
+              <Button
+                type="text"
+                icon={<HistoryOutlined />}
+                onClick={() => navigate('/my-itineraries')}
+                className={location.pathname === '/my-itineraries' ? 'active' : ''}
+              >
+                我的行程
+              </Button>
+              <Button
+                type="text"
+                icon={<DollarOutlined />}
+                onClick={() => navigate('/my-expenses')}
+                className={location.pathname === '/my-expenses' ? 'active' : ''}
+              >
+                我的开销
+              </Button>
+            </>
+          )}
 
           {user ? (
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
