@@ -42,6 +42,7 @@ import { plannerService } from '../services/plannerService';
 import { generatePDF, generatePDFFromHTML } from '../services/pdfService';
 import { API_ENDPOINTS } from '../config/api';
 import SimpleMapView from '../components/SimpleMapView';
+import HorizontalTimeline from '../components/HorizontalTimeline';
 import './ItineraryPage.scss';
 
 const { Title, Paragraph, Text } = Typography;
@@ -58,13 +59,13 @@ const ItineraryPage: React.FC = () => {
   const [loading, setLoading] = useState(!location.state?.itinerary);
   const [activeDay, setActiveDay] = useState('1');
   const [editMode, setEditMode] = useState(false);
-  const [advancedEditMode, setAdvancedEditMode] = useState(false); // 高级编辑模式
-  const [editForm] = Form.useForm();
   const [jsonEditValue, setJsonEditValue] = useState(''); // JSON 编辑器的值
   const [mapDrawerVisible, setMapDrawerVisible] = useState(false);
   const [isSaved, setIsSaved] = useState(false); // 是否已保存到云端
   const [saveLoading, setSaveLoading] = useState(false);
   const itineraryRef = useRef<HTMLDivElement>(null);
+  const [editingItemIndex, setEditingItemIndex] = useState<{dayIndex: number, itemIndex: number} | null>(null);
+  const [itemEditForm] = Form.useForm();
 
   // Load itinerary if not in state
   useEffect(() => {
@@ -204,22 +205,6 @@ const ItineraryPage: React.FC = () => {
   // Handle edit
   const handleEdit = () => {
     setEditMode(true);
-    setAdvancedEditMode(false);
-    // Populate form with current values
-    editForm.setFieldsValue({
-      destination: itinerary.metadata?.destination,
-      start_date: itinerary.metadata?.start_date,
-      end_date: itinerary.metadata?.end_date,
-      people_count: itinerary.metadata?.people_count,
-      budget: itinerary.metadata?.budget,
-      summary: itinerary.summary,
-    });
-  };
-
-  // 高级编辑模式 - 直接编辑 JSON
-  const handleAdvancedEdit = () => {
-    setEditMode(true);
-    setAdvancedEditMode(true);
     // 将当前行程数据转换为格式化的 JSON 字符串
     setJsonEditValue(JSON.stringify(itinerary, null, 2));
   };
@@ -228,40 +213,20 @@ const ItineraryPage: React.FC = () => {
     try {
       let updatedItinerary;
 
-      if (advancedEditMode) {
-        // 高级编辑模式：解析 JSON
-        try {
-          updatedItinerary = JSON.parse(jsonEditValue);
-          // 验证基本结构
-          if (!updatedItinerary.metadata) {
-            throw new Error('缺少 metadata 字段');
-          }
-        } catch (parseError: any) {
-          message.error(`JSON 格式错误: ${parseError.message}`);
-          return;
+      // 解析 JSON
+      try {
+        updatedItinerary = JSON.parse(jsonEditValue);
+        // 验证基本结构
+        if (!updatedItinerary.metadata) {
+          throw new Error('缺少 metadata 字段');
         }
-      } else {
-        // 简单编辑模式：从表单获取值
-        const values = await editForm.validateFields();
-
-        // Update local state with all edited fields
-        updatedItinerary = {
-          ...itinerary,
-          summary: values.summary,
-          metadata: {
-            ...itinerary.metadata,
-            destination: values.destination,
-            start_date: values.start_date,
-            end_date: values.end_date,
-            people_count: values.people_count,
-            budget: values.budget,
-          }
-        };
+      } catch (parseError: any) {
+        message.error(`JSON 格式错误: ${parseError.message}`);
+        return;
       }
 
       setItinerary(updatedItinerary);
       setEditMode(false);
-      setAdvancedEditMode(false);
 
       // 如果已保存到云端，则更新云端数据
       if (isSaved && id && id !== 'preview' && user) {
@@ -304,9 +269,75 @@ const ItineraryPage: React.FC = () => {
 
   const handleCancelEdit = () => {
     setEditMode(false);
-    setAdvancedEditMode(false);
-    editForm.resetFields();
     setJsonEditValue('');
+  };
+
+  // 编辑单个行程项
+  const handleEditItem = (dayIndex: number, itemIndex: number) => {
+    const item = itinerary.daily_itinerary[dayIndex].items[itemIndex];
+    setEditingItemIndex({ dayIndex, itemIndex });
+    itemEditForm.setFieldsValue({
+      time: item.time,
+      duration: item.duration,
+      type: item.type,
+      title: item.title,
+      description: item.description,
+      location: item.location,
+      estimated_cost: item.estimated_cost,
+      tips: item.tips,
+    });
+  };
+
+  // 保存行程项编辑
+  const handleSaveItem = async () => {
+    try {
+      const values = await itemEditForm.validateFields();
+      if (!editingItemIndex) return;
+
+      const { dayIndex, itemIndex } = editingItemIndex;
+      const updatedItinerary = { ...itinerary };
+      updatedItinerary.daily_itinerary[dayIndex].items[itemIndex] = {
+        ...updatedItinerary.daily_itinerary[dayIndex].items[itemIndex],
+        ...values,
+      };
+
+      setItinerary(updatedItinerary);
+      setEditingItemIndex(null);
+      itemEditForm.resetFields();
+      message.success('修改已保存');
+
+      // 同步到云端
+      if (isSaved && id && id !== 'preview' && user) {
+        try {
+          const token = await getAccessToken();
+          await fetch(API_ENDPOINTS.ITINERARY_UPDATE(id), {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              destination: updatedItinerary.metadata?.destination,
+              start_date: updatedItinerary.metadata?.start_date,
+              end_date: updatedItinerary.metadata?.end_date,
+              people_count: updatedItinerary.metadata?.people_count,
+              budget: updatedItinerary.metadata?.budget,
+              ai_response: updatedItinerary,
+            }),
+          });
+        } catch (error) {
+          console.error('Failed to sync to cloud:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Save item failed:', error);
+    }
+  };
+
+  // 取消编辑行程项
+  const handleCancelItemEdit = () => {
+    setEditingItemIndex(null);
+    itemEditForm.resetFields();
   };
 
   // Handle location click from timeline - 直接打开外部地图
@@ -379,136 +410,47 @@ const ItineraryPage: React.FC = () => {
         {/* Header */}
         <Card className="itinerary-header">
           {editMode ? (
-            advancedEditMode ? (
-              // 高级编辑模式：JSON 编辑器
-              <div>
-                <Title level={4}>高级编辑 - 直接编辑 JSON 数据</Title>
-                <Paragraph type="secondary">
-                  直接编辑完整的行程数据（JSON 格式）。请确保格式正确，否则可能导致数据丢失。
-                </Paragraph>
-                <TextArea
-                  value={jsonEditValue}
-                  onChange={(e) => setJsonEditValue(e.target.value)}
-                  rows={25}
-                  style={{
-                    fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-                    fontSize: '13px',
-                    backgroundColor: '#f5f5f5',
-                  }}
-                  placeholder="在此编辑 JSON 数据..."
-                />
-                <div style={{ marginTop: 16 }}>
-                  <Space>
-                    <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit} size="large">
-                      保存修改
-                    </Button>
-                    <Button icon={<CloseOutlined />} onClick={handleCancelEdit} size="large">
-                      取消
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        try {
-                          const parsed = JSON.parse(jsonEditValue);
-                          setJsonEditValue(JSON.stringify(parsed, null, 2));
-                          message.success('JSON 格式化成功');
-                        } catch (e: any) {
-                          message.error(`JSON 格式错误: ${e.message}`);
-                        }
-                      }}
-                    >
-                      格式化 JSON
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setAdvancedEditMode(false);
-                      }}
-                    >
-                      切换到简单编辑
-                    </Button>
-                  </Space>
-                </div>
+            // JSON 编辑器
+            <div>
+              <Title level={4}>编辑行程 - 直接编辑 JSON 数据</Title>
+              <Paragraph type="secondary">
+                直接编辑完整的行程数据（JSON 格式）。请确保格式正确，否则可能导致数据丢失。
+              </Paragraph>
+              <TextArea
+                value={jsonEditValue}
+                onChange={(e) => setJsonEditValue(e.target.value)}
+                rows={25}
+                style={{
+                  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                  fontSize: '13px',
+                  backgroundColor: '#f5f5f5',
+                }}
+                placeholder="在此编辑 JSON 数据..."
+              />
+              <div style={{ marginTop: 16 }}>
+                <Space>
+                  <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit} size="large">
+                    保存修改
+                  </Button>
+                  <Button icon={<CloseOutlined />} onClick={handleCancelEdit} size="large">
+                    取消
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      try {
+                        const parsed = JSON.parse(jsonEditValue);
+                        setJsonEditValue(JSON.stringify(parsed, null, 2));
+                        message.success('JSON 格式化成功');
+                      } catch (e: any) {
+                        message.error(`JSON 格式错误: ${e.message}`);
+                      }
+                    }}
+                  >
+                    格式化 JSON
+                  </Button>
+                </Space>
               </div>
-            ) : (
-              // 简单编辑模式：表单编辑
-              <Form form={editForm} layout="vertical">
-                <Row gutter={[24, 16]}>
-                  <Col xs={24} md={12}>
-                    <Form.Item
-                      name="destination"
-                      label="目的地"
-                      rules={[{ required: true, message: '请输入目的地' }]}
-                    >
-                      <Input size="large" placeholder="例如：杭州" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <Form.Item
-                      name="budget"
-                      label="预算（元）"
-                      rules={[{ required: true, message: '请输入预算' }]}
-                    >
-                      <InputNumber
-                        size="large"
-                        style={{ width: '100%' }}
-                        min={0}
-                        formatter={value => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                        parser={value => value!.replace(/\¥\s?|(,*)/g, '')}
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Form.Item
-                      name="start_date"
-                      label="开始日期"
-                      rules={[{ required: true, message: '请输入开始日期' }]}
-                    >
-                      <Input size="large" type="date" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Form.Item
-                      name="end_date"
-                      label="结束日期"
-                      rules={[{ required: true, message: '请输入结束日期' }]}
-                    >
-                      <Input size="large" type="date" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Form.Item
-                      name="people_count"
-                      label="出行人数"
-                      rules={[{ required: true, message: '请输入出行人数' }]}
-                    >
-                      <InputNumber size="large" style={{ width: '100%' }} min={1} max={20} />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24}>
-                    <Form.Item name="summary" label="行程亮点">
-                      <TextArea rows={4} placeholder="简要描述行程的精彩之处..." />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24}>
-                    <Space>
-                      <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit} size="large">
-                        保存修改
-                      </Button>
-                      <Button icon={<CloseOutlined />} onClick={handleCancelEdit} size="large">
-                        取消
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setAdvancedEditMode(true);
-                          setJsonEditValue(JSON.stringify(itinerary, null, 2));
-                        }}
-                      >
-                        切换到高级编辑
-                      </Button>
-                    </Space>
-                  </Col>
-                </Row>
-              </Form>
-            )
+            </div>
           ) : (
             <Row gutter={[24, 24]} align="middle">
               <Col xs={24} lg={16}>
@@ -540,10 +482,7 @@ const ItineraryPage: React.FC = () => {
                     </Button>
                   )}
                   <Button icon={<EditOutlined />} onClick={handleEdit}>
-                    简单编辑
-                  </Button>
-                  <Button onClick={handleAdvancedEdit}>
-                    高级编辑
+                    编辑
                   </Button>
                   <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPDF}>
                     下载PDF
@@ -621,8 +560,8 @@ const ItineraryPage: React.FC = () => {
 
         {/* Main Content */}
         <Row gutter={[24, 24]}>
-          <Col xs={24} lg={14}>
-            {/* Daily Itinerary */}
+          <Col xs={24}>
+            {/* Daily Itinerary Tabs */}
             <Card className="itinerary-card">
               <Tabs activeKey={activeDay} onChange={setActiveDay}>
                 {itinerary.daily_itinerary?.map((day: any) => (
@@ -635,130 +574,221 @@ const ItineraryPage: React.FC = () => {
                       <Text type="secondary">{day.date}</Text>
                     </div>
 
-                    <Timeline mode="left">
-                      {day.items?.map((item: any, index: number) => (
-                        <Timeline.Item
-                          key={index}
-                          dot={getItemIcon(item.type)}
-                          color={getItemColor(item.type)}
-                        >
-                          <Card
-                            className="timeline-card"
-                            onClick={() => handleLocationClick(item)}
-                            hoverable
-                          >
-                            <div className="timeline-header">
-                              <Space>
-                                <Tag color={getItemColor(item.type)}>
-                                  {item.type === 'attraction' ? '景点' :
-                                   item.type === 'restaurant' ? '餐饮' :
-                                   item.type === 'hotel' ? '住宿' :
-                                   item.type === 'transportation' ? '交通' : '其他'}
-                                </Tag>
-                                <Text strong>{item.time}</Text>
-                                <Text type="secondary">
-                                  <ClockCircleOutlined /> {item.duration}
-                                </Text>
-                              </Space>
-                            </div>
+                    {/* 横版时间轴 - 顶部全宽显示 */}
+                    <div style={{ marginBottom: 24 }}>
+                      <HorizontalTimeline
+                        items={day.items || []}
+                        onLocationClick={handleLocationClick}
+                      />
+                    </div>
 
-                            <Title level={5}>{item.title}</Title>
-                            <Paragraph>{item.description}</Paragraph>
+                    {/* 第二排：左侧竖版Timeline + 右侧地图等 */}
+                    <Row gutter={[24, 24]}>
+                      {/* 左侧：竖版 Timeline */}
+                      <Col xs={24} lg={14}>
+                        <Timeline mode="left">
+                          {day.items?.map((item: any, itemIndex: number) => {
+                            const dayIndex = day.day - 1;
+                            const isEditing = editingItemIndex?.dayIndex === dayIndex && editingItemIndex?.itemIndex === itemIndex;
 
-                            <Space direction="vertical" size="small">
-                              <Button
-                                type="link"
-                                icon={<EnvironmentOutlined />}
-                                onClick={() => handleLocationClick(item)}
-                                style={{ padding: 0 }}
+                            return (
+                              <Timeline.Item
+                                key={itemIndex}
+                                dot={getItemIcon(item.type)}
+                                color={getItemColor(item.type)}
                               >
-                                {item.location}
-                              </Button>
-                              {item.estimated_cost > 0 && (
-                                <Text>
-                                  <DollarOutlined /> 预计费用：¥{item.estimated_cost}
-                                </Text>
-                              )}
-                            </Space>
+                                {isEditing ? (
+                                  <Card className="timeline-card-edit">
+                                    <Form form={itemEditForm} layout="vertical">
+                                      <Row gutter={16}>
+                                        <Col span={12}>
+                                          <Form.Item name="time" label="时间" rules={[{ required: true }]}>
+                                            <Input />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                          <Form.Item name="duration" label="时长" rules={[{ required: true }]}>
+                                            <Input />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                          <Form.Item name="type" label="类型" rules={[{ required: true }]}>
+                                            <Input />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                          <Form.Item name="estimated_cost" label="费用">
+                                            <InputNumber style={{ width: '100%' }} />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col span={24}>
+                                          <Form.Item name="title" label="标题" rules={[{ required: true }]}>
+                                            <Input />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col span={24}>
+                                          <Form.Item name="description" label="描述">
+                                            <TextArea rows={3} />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col span={24}>
+                                          <Form.Item name="location" label="位置" rules={[{ required: true }]}>
+                                            <Input />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col span={24}>
+                                          <Form.Item name="tips" label="贴士">
+                                            <Input />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col span={24}>
+                                          <Space>
+                                            <Button type="primary" onClick={handleSaveItem}>保存</Button>
+                                            <Button onClick={handleCancelItemEdit}>取消</Button>
+                                          </Space>
+                                        </Col>
+                                      </Row>
+                                    </Form>
+                                  </Card>
+                                ) : (
+                                  <Card
+                                    className="timeline-card"
+                                    hoverable
+                                  >
+                                    <div className="timeline-header">
+                                      <Space>
+                                        <Tag color={getItemColor(item.type)}>
+                                          {item.type === 'attraction' ? '景点' :
+                                           item.type === 'restaurant' ? '餐饮' :
+                                           item.type === 'hotel' ? '住宿' :
+                                           item.type === 'transportation' ? '交通' : '其他'}
+                                        </Tag>
+                                        <Text strong>{item.time}</Text>
+                                        <Text type="secondary">
+                                          <ClockCircleOutlined /> {item.duration}
+                                        </Text>
+                                      </Space>
+                                      <Button
+                                        size="small"
+                                        icon={<EditOutlined />}
+                                        onClick={() => handleEditItem(dayIndex, itemIndex)}
+                                      >
+                                        编辑
+                                      </Button>
+                                    </div>
 
-                            {item.tips && (
-                              <div className="tips-section">
-                                <Text type="secondary">
-                                  💡 {item.tips}
-                                </Text>
-                              </div>
-                            )}
+                                    <Title level={5}>{item.title}</Title>
+                                    <Paragraph>{item.description}</Paragraph>
+
+                                    <Space direction="vertical" size="small">
+                                      <Button
+                                        type="link"
+                                        icon={<EnvironmentOutlined />}
+                                        onClick={() => handleLocationClick(item)}
+                                        style={{ padding: 0 }}
+                                      >
+                                        {item.location}
+                                      </Button>
+                                      {item.estimated_cost > 0 && (
+                                        <Text>
+                                          <DollarOutlined /> 预计费用：¥{item.estimated_cost}
+                                        </Text>
+                                      )}
+                                    </Space>
+
+                                    {item.tips && (
+                                      <div className="tips-section">
+                                        <Text type="secondary">
+                                          💡 {item.tips}
+                                        </Text>
+                                      </div>
+                                    )}
+                                  </Card>
+                                )}
+                              </Timeline.Item>
+                            );
+                          })}
+                        </Timeline>
+                      </Col>
+
+                      {/* 右侧：地图、住宿、贴士 */}
+                      <Col xs={24} lg={10}>
+                        {/* 地图 */}
+                        <Card className="map-card" style={{ marginBottom: 24 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <Title level={4}>地图视图</Title>
+                            <Button
+                              type="primary"
+                              size="small"
+                              onClick={() => setMapDrawerVisible(true)}
+                            >
+                              全屏地图
+                            </Button>
+                          </div>
+                          <div style={{ height: 400, borderRadius: 12, overflow: 'hidden' }}>
+                            <SimpleMapView
+                              itinerary={itinerary}
+                              activeDay={parseInt(activeDay)}
+                              onLocationClick={handleLocationClick}
+                            />
+                          </div>
+                        </Card>
+
+                        {/* 住宿推荐 */}
+                        {itinerary.accommodation_suggestions && (
+                          <Card className="accommodation-card" style={{ marginBottom: 24 }}>
+                            <Title level={4}>住宿推荐</Title>
+                            <List
+                              dataSource={itinerary.accommodation_suggestions}
+                              renderItem={(item: any) => (
+                                <List.Item>
+                                  <List.Item.Meta
+                                    avatar={<HomeOutlined style={{ fontSize: 24, color: '#0ea5e9' }} />}
+                                    title={item.name}
+                                    description={
+                                      <Space direction="vertical" size="small">
+                                        <Button
+                                          type="link"
+                                          icon={<EnvironmentOutlined />}
+                                          onClick={() => {
+                                            const amapUrl = `https://uri.amap.com/search?keyword=${encodeURIComponent(item.location || item.name)}&city=&coordinate=gaode`;
+                                            window.open(amapUrl, '_blank');
+                                          }}
+                                          style={{ padding: 0 }}
+                                        >
+                                          {item.location}
+                                        </Button>
+                                        <Text type="secondary">{item.price_range}</Text>
+                                        <Text>{item.features}</Text>
+                                      </Space>
+                                    }
+                                  />
+                                </List.Item>
+                              )}
+                            />
                           </Card>
-                        </Timeline.Item>
-                      ))}
-                    </Timeline>
+                        )}
+
+                        {/* 旅行贴士 */}
+                        {itinerary.travel_tips && (
+                          <Card className="tips-card">
+                            <Title level={4}>旅行贴士</Title>
+                            <List
+                              dataSource={itinerary.travel_tips}
+                              renderItem={(tip: string) => (
+                                <List.Item>
+                                  <Text>✨ {tip}</Text>
+                                </List.Item>
+                              )}
+                            />
+                          </Card>
+                        )}
+                      </Col>
+                    </Row>
                   </TabPane>
                 ))}
               </Tabs>
             </Card>
-          </Col>
-
-          <Col xs={24} lg={10}>
-            {/* Map */}
-            <Card className="map-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Title level={4}>地图视图</Title>
-                <Button
-                  type="primary"
-                  size="small"
-                  onClick={() => setMapDrawerVisible(true)}
-                >
-                  全屏地图
-                </Button>
-              </div>
-              <div style={{ height: 400, borderRadius: 12, overflow: 'hidden' }}>
-                <SimpleMapView
-                  itinerary={itinerary}
-                  activeDay={parseInt(activeDay)}
-                  onLocationClick={handleLocationClick}
-                />
-              </div>
-            </Card>
-
-            {/* Accommodation Suggestions */}
-            {itinerary.accommodation_suggestions && (
-              <Card className="accommodation-card">
-                <Title level={4}>住宿推荐</Title>
-                <List
-                  dataSource={itinerary.accommodation_suggestions}
-                  renderItem={(item: any) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={<HomeOutlined style={{ fontSize: 24, color: '#0ea5e9' }} />}
-                        title={item.name}
-                        description={
-                          <Space direction="vertical" size="small">
-                            <Text>{item.location}</Text>
-                            <Text type="secondary">{item.price_range}</Text>
-                            <Text>{item.features}</Text>
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              </Card>
-            )}
-
-            {/* Travel Tips */}
-            {itinerary.travel_tips && (
-              <Card className="tips-card">
-                <Title level={4}>旅行贴士</Title>
-                <List
-                  dataSource={itinerary.travel_tips}
-                  renderItem={(tip: string) => (
-                    <List.Item>
-                      <Text>✨ {tip}</Text>
-                    </List.Item>
-                  )}
-                />
-              </Card>
-            )}
           </Col>
         </Row>
       </div>

@@ -112,6 +112,9 @@
       }
 
       .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 12px;
       }
 
@@ -127,6 +130,13 @@
         background: #f5f7fa;
         border-radius: 8px;
       }
+    }
+
+    .timeline-card-edit {
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      border: 2px solid #22c55e;
+      background: #f0fdf5;
     }
 
     .ant-timeline-item-dot {
