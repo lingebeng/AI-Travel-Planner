@@ -7,7 +7,7 @@ import React, { useState, useRef } from 'react';
 import { Button, message } from 'antd';
 import { AudioOutlined, LoadingOutlined } from '@ant-design/icons';
 import { expenseService, VoiceParseResult } from '../services/expenseService';
-import { API_ENDPOINTS } from '../config/api';
+import { supabase } from '../lib/supabase';
 
 interface VoiceExpenseInputProps {
   onParsed: (result: VoiceParseResult) => void;
@@ -25,10 +25,21 @@ const VoiceExpenseInput: React.FC<VoiceExpenseInputProps> = ({
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      // 检查是否支持webm格式
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
 
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
+        mimeType: mimeType,
       });
 
       mediaRecorderRef.current = mediaRecorder;
@@ -41,7 +52,15 @@ const VoiceExpenseInput: React.FC<VoiceExpenseInputProps> = ({
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+
+        // 检查录音大小
+        if (audioBlob.size < 1000) {
+          message.warning('录音时间太短，请重新录制');
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
         await processAudio(audioBlob);
 
         // Stop all tracks
@@ -50,7 +69,7 @@ const VoiceExpenseInput: React.FC<VoiceExpenseInputProps> = ({
 
       mediaRecorder.start();
       setIsRecording(true);
-      message.info('正在录音，点击停止按钮结束');
+      message.info('🎤 正在录音... 请清晰说出开销内容（建议3-5秒）', 5);
     } catch (error) {
       console.error('Failed to start recording:', error);
       message.error('无法访问麦克风，请检查权限设置');
@@ -68,22 +87,32 @@ const VoiceExpenseInput: React.FC<VoiceExpenseInputProps> = ({
     setIsProcessing(true);
 
     try {
+      // Get auth token from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('未登录，请先登录');
+      }
+
       // Step 1: Transcribe audio to text
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
 
-      const transcribeResponse = await fetch(API_ENDPOINTS.VOICE_TRANSCRIBE, {
+      const transcribeResponse = await fetch('http://localhost:5001/api/voice/transcribe', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: formData,
       });
 
       const transcribeData = await transcribeResponse.json();
 
-      if (!transcribeData.success || !transcribeData.text) {
+      // 后端返回格式：{success: bool, error: string, transcription: string}
+      if (!transcribeData.success || !transcribeData.transcription) {
         throw new Error(transcribeData.error || '语音识别失败');
       }
 
-      const voiceText = transcribeData.text;
+      const voiceText = transcribeData.transcription;
       message.success(`识别结果: ${voiceText}`);
 
       // Step 2: Parse text into expense data using AI
