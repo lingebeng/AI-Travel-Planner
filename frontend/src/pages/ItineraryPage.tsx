@@ -18,7 +18,8 @@ import {
   message,
   Spin,
   Drawer,
-  Modal
+  Modal,
+  Popconfirm
 } from 'antd';
 import {
   EnvironmentOutlined,
@@ -33,7 +34,9 @@ import {
   ShoppingOutlined,
   DownloadOutlined,
   EditOutlined,
-  CloudUploadOutlined
+  CloudUploadOutlined,
+  PlusOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { plannerService } from '../services/plannerService';
@@ -63,6 +66,8 @@ const ItineraryPage: React.FC = () => {
   const itineraryRef = useRef<HTMLDivElement>(null);
   const [editingItemIndex, setEditingItemIndex] = useState<{dayIndex: number, itemIndex: number} | null>(null);
   const [itemEditForm] = Form.useForm();
+  const [addingNewItem, setAddingNewItem] = useState<number | null>(null); // 当前正在添加新行程项的day index
+  const [newItemForm] = Form.useForm();
 
   // 模块化编辑的状态
   const [editingSummary, setEditingSummary] = useState(false);
@@ -437,6 +442,73 @@ const ItineraryPage: React.FC = () => {
     itemEditForm.resetFields();
   };
 
+  // 新建行程项
+  const handleAddNewItem = (dayIndex: number) => {
+    setAddingNewItem(dayIndex);
+    newItemForm.resetFields();
+    // 设置默认值
+    newItemForm.setFieldsValue({
+      time: '09:00',
+      duration: '1小时',
+      type: 'attraction',
+      estimated_cost: 0,
+    });
+  };
+
+  const handleSaveNewItem = async () => {
+    try {
+      const values = await newItemForm.validateFields();
+      if (addingNewItem === null) return;
+
+      const updatedItinerary = { ...itinerary };
+      const newItem = {
+        time: values.time,
+        duration: values.duration,
+        type: values.type,
+        title: values.title,
+        description: values.description || '',
+        location: values.location,
+        estimated_cost: values.estimated_cost || 0,
+        tips: values.tips || '',
+      };
+
+      // 添加到当前天的行程项数组
+      if (!updatedItinerary.daily_itinerary[addingNewItem].items) {
+        updatedItinerary.daily_itinerary[addingNewItem].items = [];
+      }
+      updatedItinerary.daily_itinerary[addingNewItem].items.push(newItem);
+
+      setItinerary(updatedItinerary);
+      setAddingNewItem(null);
+      newItemForm.resetFields();
+      message.success('行程项已添加');
+      await syncToCloud(updatedItinerary);
+    } catch (error) {
+      console.error('Add new item failed:', error);
+    }
+  };
+
+  const handleCancelAddNewItem = () => {
+    setAddingNewItem(null);
+    newItemForm.resetFields();
+  };
+
+  // 删除行程项
+  const handleDeleteItem = async (dayIndex: number, itemIndex: number) => {
+    try {
+      const updatedItinerary = { ...itinerary };
+      // 从数组中移除该项
+      updatedItinerary.daily_itinerary[dayIndex].items.splice(itemIndex, 1);
+
+      setItinerary(updatedItinerary);
+      message.success('行程项已删除');
+      await syncToCloud(updatedItinerary);
+    } catch (error) {
+      console.error('Delete item failed:', error);
+      message.error('删除失败');
+    }
+  };
+
   // Handle location click from timeline - 直接打开外部地图
   const handleLocationClick = (item: any) => {
     const location = item.location || item.title;
@@ -758,13 +830,30 @@ const ItineraryPage: React.FC = () => {
                                           <ClockCircleOutlined /> {item.duration}
                                         </Text>
                                       </Space>
-                                      <Button
-                                        size="small"
-                                        icon={<EditOutlined />}
-                                        onClick={() => handleEditItem(dayIndex, itemIndex)}
-                                      >
-                                        编辑
-                                      </Button>
+                                      <Space>
+                                        <Button
+                                          size="small"
+                                          icon={<EditOutlined />}
+                                          onClick={() => handleEditItem(dayIndex, itemIndex)}
+                                        >
+                                          编辑
+                                        </Button>
+                                        <Popconfirm
+                                          title="确认删除"
+                                          description="确定要删除这个行程项吗？"
+                                          onConfirm={() => handleDeleteItem(dayIndex, itemIndex)}
+                                          okText="确定"
+                                          cancelText="取消"
+                                        >
+                                          <Button
+                                            size="small"
+                                            danger
+                                            icon={<DeleteOutlined />}
+                                          >
+                                            删除
+                                          </Button>
+                                        </Popconfirm>
+                                      </Space>
                                     </div>
 
                                     <Title level={5}>{item.title}</Title>
@@ -799,6 +888,17 @@ const ItineraryPage: React.FC = () => {
                             );
                           })}
                         </Timeline>
+
+                        {/* 添加新行程项按钮 */}
+                        <Button
+                          type="dashed"
+                          block
+                          icon={<PlusOutlined />}
+                          onClick={() => handleAddNewItem(day.day - 1)}
+                          style={{ marginTop: 16 }}
+                        >
+                          添加新行程项
+                        </Button>
                       </Col>
 
                       {/* 右侧：地图、住宿、贴士 */}
@@ -815,7 +915,7 @@ const ItineraryPage: React.FC = () => {
                               全屏地图
                             </Button>
                           </div>
-                          <div style={{ height: 400, borderRadius: 12, overflow: 'hidden' }}>
+                          <div style={{ borderRadius: 12 }}>
                             <SimpleMapView
                               itinerary={itinerary}
                               activeDay={parseInt(activeDay)}
@@ -1092,6 +1192,60 @@ const ItineraryPage: React.FC = () => {
               </>
             )}
           </Form.List>
+        </Form>
+      </Modal>
+
+      {/* 新建行程项 Modal */}
+      <Modal
+        title="添加新行程项"
+        open={addingNewItem !== null}
+        onOk={handleSaveNewItem}
+        onCancel={handleCancelAddNewItem}
+        width={700}
+      >
+        <Form form={newItemForm} layout="vertical">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="time" label="时间" rules={[{ required: true, message: '请输入时间' }]}>
+                <Input placeholder="例如：09:00" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="duration" label="时长" rules={[{ required: true, message: '请输入时长' }]}>
+                <Input placeholder="例如：2小时" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="type" label="类型" rules={[{ required: true, message: '请选择类型' }]}>
+                <Input placeholder="attraction/restaurant/hotel/transportation/shopping" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="estimated_cost" label="预计费用">
+                <InputNumber style={{ width: '100%' }} min={0} placeholder="0" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="title" label="标题" rules={[{ required: true, message: '请输入标题' }]}>
+                <Input placeholder="例如：西湖断桥" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="description" label="描述">
+                <TextArea rows={3} placeholder="详细描述这个行程项..." />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="location" label="位置" rules={[{ required: true, message: '请输入位置' }]}>
+                <Input placeholder="例如：杭州市西湖区北山街" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="tips" label="贴士">
+                <Input placeholder="旅行小贴士..." />
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
 
