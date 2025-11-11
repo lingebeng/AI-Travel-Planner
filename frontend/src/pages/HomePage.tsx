@@ -9,12 +9,20 @@ import {
   HeartOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { exampleItinerary } from '../data/exampleItinerary';
 import './HomePage.scss';
 
 const { Title, Paragraph } = Typography;
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+
+  const handleViewExample = () => {
+    // 跳转到示例行程页面，带上示例数据
+    navigate('/itinerary/example', {
+      state: { itinerary: exampleItinerary }
+    });
+  };
 
   const features = [
     {
@@ -76,6 +84,7 @@ const HomePage: React.FC = () => {
               <Button
                 size="large"
                 ghost
+                onClick={handleViewExample}
                 className="cta-button secondary"
               >
                 查看示例

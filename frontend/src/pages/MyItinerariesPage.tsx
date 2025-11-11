@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Typography, Button, Empty, Spin, Tag, message, Popconfirm } from 'antd';
-import { CalendarOutlined, UserOutlined, DollarOutlined, EnvironmentOutlined, DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
+import { CalendarOutlined, UserOutlined, DollarOutlined, EnvironmentOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
@@ -102,28 +102,6 @@ const MyItinerariesPage: React.FC = () => {
     });
   };
 
-  const handleEdit = (itinerary: Itinerary) => {
-    // 跳转到行程页面，并传递行程数据
-    const itineraryData = itinerary.ai_response && typeof itinerary.ai_response === 'object'
-      ? {
-          ...itinerary.ai_response,
-          metadata: {
-            ...itinerary.ai_response.metadata,
-            destination: itinerary.destination,
-            start_date: itinerary.start_date,
-            end_date: itinerary.end_date,
-            budget: itinerary.budget,
-            people_count: itinerary.people_count,
-            preferences: itinerary.preferences,
-          }
-        }
-      : null;
-
-    navigate(`/itinerary/${itinerary.id}`, {
-      state: { itinerary: itineraryData }
-    });
-  };
-
   const calculateDays = (startDate: string, endDate: string): number => {
     const start = dayjs(startDate);
     const end = dayjs(endDate);
@@ -168,13 +146,6 @@ const MyItinerariesPage: React.FC = () => {
                     onClick={() => handleView(itinerary)}
                   >
                     查看详情
-                  </Button>,
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => handleEdit(itinerary)}
-                  >
-                    编辑
                   </Button>,
                   <Popconfirm
                     title="确认删除"
