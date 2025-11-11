@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai-travel-planner-backend
+    ports:
+      - "5001:5001"
+    environment:
+      # Flask 配置
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+
+      # Supabase 配置（需要填入真实值）
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+
+      # DeepSeek API 配置（需要填入真实值）
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+
+      # 高德地图 API 配置（需要填入真实值）
+      - AMAP_API_KEY=${AMAP_API_KEY}
+    volumes:
+      - backend-temp:/tmp/ai_travel_planner
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5001/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai-travel-planner-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  backend-temp:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

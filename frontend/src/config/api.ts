@@ -1,5 +1,8 @@
 // API 配置
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// 在生产环境（Docker）中使用空字符串，让请求走 Nginx 代理
+// 在开发环境中使用 localhost:5001
+export const API_BASE_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.MODE === 'production' ? '' : 'http://localhost:5001');
 
 export const API_ENDPOINTS = {
   // 认证
