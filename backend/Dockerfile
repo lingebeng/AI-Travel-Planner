@@ -24,6 +24,7 @@ COPY requirements.txt ./
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
+RUN apt-get update && apt-get install -y flac && rm -rf /var/lib/apt/lists/*
 # 创建临时目录用于语音文件
 RUN mkdir -p /tmp/ai_travel_planner
 

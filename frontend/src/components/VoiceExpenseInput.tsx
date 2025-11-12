@@ -97,7 +97,7 @@ const VoiceExpenseInput: React.FC<VoiceExpenseInputProps> = ({
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
 
-      const transcribeResponse = await fetch('http://localhost:5001/api/voice/transcribe', {
+      const transcribeResponse = await fetch('/api/voice/transcribe', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
