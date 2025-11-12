@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # 后端服务
   backend:
-    image: ai-travel-backend:latest
+    image: crpi-6i9sio78als8rhqg.cn-hangzhou.personal.cr.aliyuncs.com/linhaifeng-ai/ai-travel-backend:v0.1.0
     container_name: ai-travel-planner-backend
     ports:
       - "5001:5001"
@@ -27,7 +27,7 @@ services:
 
   # 前端服务
   frontend:
-    image: ai-travel-frontend:latest
+    image: crpi-6i9sio78als8rhqg.cn-hangzhou.personal.cr.aliyuncs.com/linhaifeng-ai/ai-travel-frontend:v0.1.0
     container_name: ai-travel-planner-frontend
     ports:
       - "80:80"
