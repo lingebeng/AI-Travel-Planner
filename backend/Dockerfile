@@ -16,15 +16,13 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# 复制应用代码
+COPY . .
 # 复制依赖文件
 COPY requirements.txt ./
-
 # 安装 Python 依赖
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
-
-# 复制应用代码
-COPY . .
 
 # 创建临时目录用于语音文件
 RUN mkdir -p /tmp/ai_travel_planner

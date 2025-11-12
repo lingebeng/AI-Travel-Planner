@@ -3,26 +3,16 @@ version: '3.8'
 services:
   # 后端服务
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ai-travel-backend:latest
     container_name: ai-travel-planner-backend
     ports:
       - "5001:5001"
+    env_file:
+      - .env
     environment:
       # Flask 配置
       - FLASK_ENV=production
       - FLASK_DEBUG=0
-
-      # Supabase 配置（需要填入真实值）
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
-
-      # DeepSeek API 配置（需要填入真实值）
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
-
-      # 高德地图 API 配置（需要填入真实值）
-      - AMAP_API_KEY=${AMAP_API_KEY}
     volumes:
       - backend-temp:/tmp/ai_travel_planner
     networks:
@@ -37,9 +27,7 @@ services:
 
   # 前端服务
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ai-travel-frontend:latest
     container_name: ai-travel-planner-frontend
     ports:
       - "80:80"
