@@ -4,15 +4,47 @@ AI Travel Planner
 
 ## 1. 技术栈选用
 
-| 类别 | 技术 | 选用理由 |
-| :--- | :--- | :--- |
-| **后端语言** | Python | 拥有强大的 AI/LLM 生态，非常适合作为后端语言。 |
-| **后端框架** | Flask | 轻量、灵活，上手快，足以支撑本项目的功能。 |
-| **前端语言** | TypeScript | 为 JavaScript 提供了类型安全，能显著提高大型项目代码的健壮性。 |
-| **前端框架** | React | 生态成熟，社区活跃，其组件化思想和高效的 DOM 更新能力是构建复杂动态 UI 的理想选择。 |
-| **大模型 (LLM)** | DeepSeek | 用于驱动核心的行程规划和费用预算功能。 |
-| **语音识别** | Python包 | 满足项目对语音输入功能的硬性要求，将用户的语音指令转换成文本。 |
-| **地图与导航** | 高德地图 API | 功能全面，在国内数据精准，完美契合“地图为主的交互界面”和生成交通路线的需求。 |
-| **数据库与认证** | Supabase | 开源的 Firebase 替代品，快速搭建用户系统，实现旅行计划的云端存储和同步。 |
-| **UI 组件库** | Ant Design | 企业级的 UI 设计系统，提供了丰富的 React 组件，可快速构建出专业、美观的界面。 |
-| **部署** | Docker | 按项目要求进行容器化打包，确保开发、测试和最终提交的环境一致性。 |
+| 类别             | 技术         | 选用理由                                                                            |
+| :--------------- | :----------- | :---------------------------------------------------------------------------------- |
+| **后端语言**     | Python       | 拥有强大的 AI/LLM 生态，非常适合作为后端语言。                                      |
+| **后端框架**     | Flask        | 轻量、灵活，上手快，足以支撑本项目的功能。                                          |
+| **前端语言**     | TypeScript   | 为 JavaScript 提供了类型安全，能显著提高大型项目代码的健壮性。                      |
+| **前端框架**     | React        | 生态成熟，社区活跃，其组件化思想和高效的 DOM 更新能力是构建复杂动态 UI 的理想选择。 |
+| **大模型 (LLM)** | DeepSeek     | 用于驱动核心的行程规划和费用预算功能。                                              |
+| **语音识别**     | Python 包    | 满足项目对语音输入功能的硬性要求，将用户的语音指令转换成文本。                      |
+| **地图与导航**   | 高德地图 API | 功能全面，在国内数据精准，完美契合“地图为主的交互界面”和生成交通路线的需求。        |
+| **数据库与认证** | Supabase     | 开源的 Firebase 替代品，快速搭建用户系统，实现旅行计划的云端存储和同步。            |
+| **UI 组件库**    | Ant Design   | 企业级的 UI 设计系统，提供了丰富的 React 组件，可快速构建出专业、美观的界面。       |
+| **部署**         | Docker       | 按项目要求进行容器化打包，确保开发、测试和最终提交的环境一致性。                    |
+
+## 2 使用说明
+
+### 2.1 下载
+
+```bash
+git clone https://github.com/lingebeng/AI-Travel-Planner.git
+cd AI-Travel-Planner
+```
+
+### 2.2 配置 .env 密钥文件
+
+```bash
+vim .env
+# 填充 .env.example 的密钥
+```
+
+### 2.3 docker 下载及运行
+
+```bash
+# 下载前端镜像
+docker pull crpi-6i9sio78als8rhqg.cn-hangzhou.personal.cr.aliyuncs.com/linhaifeng-ai/ai-travel-frontend
+# 下载后端镜像
+docker pull crpi-6i9sio78als8rhqg.cn-hangzhou.personal.cr.aliyuncs.com/linhaifeng-ai/ai-travel-backend
+
+# 运行
+docker-compose up -d
+```
+
+### 2.4 访问
+
+在本地浏览器访问：http://localhost/ 即可
